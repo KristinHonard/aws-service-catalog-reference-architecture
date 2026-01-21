@@ -1,0 +1,176 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: API Gateway/Lambda alarms for Lambda hosted Severless API application.
+
+###############################################################################
+# Metadata
+###############################################################################
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: ApiGateway Alerting
+        Parameters:
+          - IncludeApiGatewayAlerts
+          - ApiName
+          - Threshold4XXErrors
+          - Period4XXErrors
+          - Threshold5XXErrors
+          - Period5XXErrors
+      - Label:
+          default: Lambda Alerting
+        Parameters:
+          - IncludeLambdaAlerts
+          - ApiLambdaFunctionName
+          - ThresholdLambdaErrors
+          - PeriodLambdaErrors          
+
+###############################################################################
+# Parameters
+###############################################################################
+
+Parameters:
+
+  IncludeApiGatewayAlerts:
+    Type: String
+    Default: true
+    AllowedValues: [true, false]
+
+  ApiName:
+    Description: The name of API Gateway to monitor and alert for against.  Note - this is the name that appears in the 'Name' column in the ApiGateway console (not the ID) listing all the APIs.  There does not appear to be a way to retrieve this property in CloudFormation with the GetAtt instrinsic function.
+    Type: String
+    Default: ro-tracking-api-dev
+
+  Threshold4XXErrors:
+    Description: The threshold to alert on for 4XX errors in API Gateway.
+    Type: Number
+    Default: 10
+    MinValue: 1
+    MaxValue: 9999
+
+  Period4XXErrors:
+    Description: The period in seconds for the threshold to alert on for 4XX errors in API Gateway.
+    Type: Number
+    Default: 60
+    MinValue: 5
+    MaxValue: 3600
+
+  Threshold5XXErrors:
+    Description: The threshold to alert on for 5XX errors in API Gateway.
+    Type: Number
+    Default: 10
+    MinValue: 1
+    MaxValue: 9999
+
+  Period5XXErrors:
+    Description: The period in seconds for the threshold to alert on for 5XX errors in API Gateway.
+    Type: Number
+    Default: 60
+    MinValue: 5
+    MaxValue: 3600
+
+  IncludeLambdaAlerts:
+    Type: String
+    Default: true
+    AllowedValues: [true, false]
+
+  ApiLambdaFunctionName:
+    Description: Name of the Lambda Function thats hosting the backend API.
+    Type: String
+    Default: ro-tracking-api-dev-api
+
+  ThresholdLambdaErrors:
+    Description: The threshold to alert on for Lambda errors.
+    Type: Number
+    Default: 10
+    MinValue: 1
+    MaxValue: 9999
+
+  PeriodLambdaErrors:
+    Description: The period in seconds for the threshold to alert on for Lambda errors.
+    Type: Number
+    Default: 60
+    MinValue: 5
+    MaxValue: 3600
+  
+  OperatorEmail:
+    Type: String
+    Default: skirk@mathematica-mpr.com
+
+
+###############################################################################
+# Conditions
+###############################################################################
+
+Conditions:
+  ApiGatewayAlerts: !Equals [true, !Ref IncludeApiGatewayAlerts]
+  LambdaAlerts: !Equals [true, !Ref IncludeLambdaAlerts]
+
+###############################################################################
+# Resources
+###############################################################################
+
+Resources:
+
+  AlarmsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      #TODO: Add KMS encryption
+      TopicName: !Sub ${ApiName}-AlarmTopic
+      Subscription:
+        - Endpoint: !Ref OperatorEmail
+          Protocol: email
+
+  ApiGateway4XXAlarm:
+    Condition: ApiGatewayAlerts
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ApiName}-ApiGateway-4XX-Alarm
+      AlarmActions:
+        - !Ref AlarmsTopic
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref ApiName
+      EvaluationPeriods: 1
+      MetricName: 4XXError
+      Namespace: AWS/ApiGateway
+      Period: !Ref Period4XXErrors
+      Statistic: Sum
+      Threshold: !Ref Threshold4XXErrors
+  
+  ApiGateway5XXAlarm:
+    Condition: ApiGatewayAlerts
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ApiName}-ApiGateway-5XX-Alarm
+      AlarmActions:
+        - !Ref AlarmsTopic
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref ApiName
+      EvaluationPeriods: 1
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Period: !Ref Period5XXErrors
+      Statistic: Sum
+      Threshold: !Ref Threshold5XXErrors
+
+  ApiLambdaFunctionErrorsAlarm:
+    Condition: LambdaAlerts
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ApiLambdaFunctionName}-Lambda-Error-Alarm
+      AlarmActions:
+        - !Ref AlarmsTopic
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ApiLambdaFunctionName
+      EvaluationPeriods: 1
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: !Ref PeriodLambdaErrors 
+      Statistic: Sum
+      Threshold: !Ref ThresholdLambdaErrors

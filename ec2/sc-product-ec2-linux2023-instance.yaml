@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Linux EC2 Apache Demo Webserver ServiceCatalog product. (fdp-1p4dlgcoi)
+
+Parameters:
+  PortfolioProvider:
+    Type: String
+    Description: Provider Name
+
+  LaunchConstraintRole:
+    Type: String
+    Description: Launch constraint role for EC2 products.
+
+  PortfolioId:
+    Type: String
+    Description: The SC portfolio this product will be attached to.
+
+  RepoRootURL:
+    Type: String
+    Description: Root url for the repo containing the product templates.
+
+Resources:
+  Linux2023Product:
+    Type: AWS::ServiceCatalog::CloudFormationProduct
+    Properties:
+      Name: Linux 2023 EC2 Instance
+      Description: This CloudFormation template creates a securely configured Amazon Linux 2023 EC2 instance with comprehensive monitoring and security hardening.
+      Owner: !Ref PortfolioProvider
+      Distributor: !Ref PortfolioProvider
+      SupportDescription: ITS Cloud Support
+      SupportEmail: ITSCloudSupport@mathematica-mpr.com
+      AcceptLanguage: en
+      SupportUrl: https://mathematica.service-now.com/mpr?id=emp_taxonomy_topic&topic_id=89bd521087401e10c05ab9d6cebb35f2
+      ProductType: CLOUD_FORMATION_TEMPLATE
+      ProvisioningArtifactParameters:
+        - Description: Linux 2023 EC2 instance 
+          Info:
+            LoadTemplateFromURL: !Sub '${RepoRootURL}ec2/sc-ec2-linux2023-instance.yaml'
+          Name: Linux 2023 v1.0
+
+  AssociateLinux2023Product:
+    Type: AWS::ServiceCatalog::PortfolioProductAssociation
+    Properties:
+      PortfolioId: !Ref PortfolioId
+      ProductId: !Ref Linux2023Product
+
+  constraintLinux2023:
+    Type: AWS::ServiceCatalog::LaunchRoleConstraint
+    DependsOn: AssociateLinux2023Product
+    Properties:
+      PortfolioId: !Ref PortfolioId
+      ProductId: !Ref Linux2023Product
+      LocalRoleName: !Ref LaunchConstraintRole
+      Description: !Ref LaunchConstraintRole
+
+Outputs:
+  ProductId:
+    Value: !Ref Linux2023Product

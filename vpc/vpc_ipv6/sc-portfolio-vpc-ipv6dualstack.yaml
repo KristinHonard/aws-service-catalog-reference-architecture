@@ -1,0 +1,322 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: VPC IPv6 Dual Stack Portfolio for Service Catalog. (fdp-1p4da46nc)
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Portfolio Information
+        Parameters:
+          - PortfolioName
+          - PortfolioProvider
+          - PortfolioDescription
+      - Label:
+          default: IAM Settings
+        Parameters:
+          - LaunchRoleName
+          - LinkedRole1
+          - LinkedRole2
+          - LinkedRole3
+      - Label:
+          default: Product Settings
+        Parameters:
+          - RepoRootURL
+
+Parameters:
+  PortfolioProvider:
+    Type: String
+    Description: Provider Name
+    Default: ITS Cloud Support
+
+  PortfolioName:
+    Type: String
+    Description: Portfolio Name
+    Default: MCSS Service Catalog VPC IPv6 Dual Stack Reference Architecture
+
+  PortfolioDescription:
+    Type: String
+    Description: Portfolio Description
+    Default: MCSS Service Catalog Portfolio that contains reference architecture products for Amazon Virtual Private Cloud (VPC).
+ 
+  LaunchRoleName:
+    Type: String
+    Description: Name of the launch constraint role for VPC products. Leave this blank to create the role.
+ 
+  LinkedRole1:
+    Type: String
+    Description: (Optional) The name of a role which can execute products in this portfolio.
+    Default: 'AWSServiceCatalogAdminFullAccess'
+
+  LinkedRole2:
+    Type: String
+    Description: (Optional) The name of a second role which can execute products in this portfolio.
+    Default: 'AWSServiceCatalogEndUserAccess'
+
+  LinkedRole3:
+    Type: String
+    Description: (Optional) The name of a third role which can execute products in this portfolio.
+    Default: 'AdministratorAccess'
+
+  RepoRootURL:
+    Type: String
+    Description: Root url for the repo containing the product templates.
+    Default: https://s3.amazonaws.com/aws-service-catalog-reference-architectures-314628052097/
+
+Conditions:
+  CreateLaunchConstraint: !Equals 
+    - !Ref LaunchRoleName
+    - ''
+  CondLinkRole1: !Not 
+    - !Equals 
+      - !Ref LinkedRole1
+      - ''
+  CondLinkRole2: !Not 
+    - !Equals 
+      - !Ref LinkedRole2
+      - ''
+  CondLinkRole3: !Not 
+    - !Equals 
+      - !Ref LinkedRole3
+      - ''
+
+Resources:
+  SCVPCIPV6portfolio:
+    Type: AWS::ServiceCatalog::Portfolio
+    Properties:
+      ProviderName: !Ref PortfolioProvider
+      Description: !Ref PortfolioDescription
+      DisplayName: !Ref PortfolioName
+ 
+  addrole1:
+    Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
+    Condition: CondLinkRole1
+    Properties:
+      PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole1}'
+      PortfolioId: !Ref SCVPCIPV6portfolio
+      PrincipalType: IAM
+ 
+  addrole2:
+    Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
+    Condition: CondLinkRole2
+    Properties:
+      PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole2}'
+      PortfolioId: !Ref SCVPCIPV6portfolio
+      PrincipalType: IAM
+ 
+  addrole3:
+    Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
+    Condition: CondLinkRole3
+    Properties:
+      PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole3}'
+      PortfolioId: !Ref SCVPCIPV6portfolio
+      PrincipalType: IAM
+ 
+  LaunchConstraintRole:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateLaunchConstraint
+    Properties:
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-vpc-launchrole.yml'
+      TimeoutInMinutes: 5
+ 
+  vpcIPV6dualstack2privatesubnetsproduct:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        PortfolioProvider: !Ref PortfolioProvider
+        LaunchConstraintRole: !If 
+          - CreateLaunchConstraint
+          - !GetAtt 
+            - LaunchConstraintRole
+            - Outputs.LaunchRoleName
+          - !Ref LaunchRoleName
+        PortfolioId: !Ref SCVPCIPV6portfolio
+        RepoRootURL: !Ref RepoRootURL
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-2private.yaml'
+      TimeoutInMinutes: 5
+ 
+  vpcIPV6dualstack3privatesubnets:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        PortfolioProvider: !Ref PortfolioProvider
+        LaunchConstraintRole: !If 
+          - CreateLaunchConstraint
+          - !GetAtt 
+            - LaunchConstraintRole
+            - Outputs.LaunchRoleName
+          - !Ref LaunchRoleName
+        PortfolioId: !Ref SCVPCIPV6portfolio
+        RepoRootURL: !Ref RepoRootURL
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-3private.yaml'
+      TimeoutInMinutes: 5
+ 
+  vpcIPV6dualstack4privatesubnetsproduct:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        PortfolioProvider: !Ref PortfolioProvider
+        LaunchConstraintRole: !If 
+          - CreateLaunchConstraint
+          - !GetAtt 
+            - LaunchConstraintRole
+            - Outputs.LaunchRoleName
+          - !Ref LaunchRoleName
+        PortfolioId: !Ref SCVPCIPV6portfolio
+        RepoRootURL: !Ref RepoRootURL
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-4private.yaml'
+      TimeoutInMinutes: 5
+ 
+  vpcIPV6dualstack2public2private1natproduct:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        PortfolioProvider: !Ref PortfolioProvider
+        LaunchConstraintRole: !If 
+          - CreateLaunchConstraint
+          - !GetAtt 
+            - LaunchConstraintRole
+            - Outputs.LaunchRoleName
+          - !Ref LaunchRoleName
+        PortfolioId: !Ref SCVPCIPV6portfolio
+        RepoRootURL: !Ref RepoRootURL
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-2public-2private-1nat.yaml'
+      TimeoutInMinutes: 5
+ 
+  vpcIPV6dualstack2public2private2natproduct:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        PortfolioProvider: !Ref PortfolioProvider
+        LaunchConstraintRole: !If 
+          - CreateLaunchConstraint
+          - !GetAtt 
+            - LaunchConstraintRole
+            - Outputs.LaunchRoleName
+          - !Ref LaunchRoleName
+        PortfolioId: !Ref SCVPCIPV6portfolio
+        RepoRootURL: !Ref RepoRootURL
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-2public-2private-2nat.yaml'
+      TimeoutInMinutes: 5
+
+  vpcIPV6dualstack3public3private1natproduct:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        PortfolioProvider: !Ref PortfolioProvider
+        LaunchConstraintRole: !If 
+          - CreateLaunchConstraint
+          - !GetAtt 
+            - LaunchConstraintRole
+            - Outputs.LaunchRoleName
+          - !Ref LaunchRoleName
+        PortfolioId: !Ref SCVPCIPV6portfolio
+        RepoRootURL: !Ref RepoRootURL
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-3public-3private-1nat.yaml'
+      TimeoutInMinutes: 5
+
+  vpcIPV6dualstack3public3private2natproduct:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        PortfolioProvider: !Ref PortfolioProvider
+        LaunchConstraintRole: !If 
+          - CreateLaunchConstraint
+          - !GetAtt 
+            - LaunchConstraintRole
+            - Outputs.LaunchRoleName
+          - !Ref LaunchRoleName
+        PortfolioId: !Ref SCVPCIPV6portfolio
+        RepoRootURL: !Ref RepoRootURL
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-3public-3private-2nat.yaml'
+      TimeoutInMinutes: 5
+
+  vpcIPV6dualstack3public3private3natproduct:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        PortfolioProvider: !Ref PortfolioProvider
+        LaunchConstraintRole: !If 
+          - CreateLaunchConstraint
+          - !GetAtt 
+            - LaunchConstraintRole
+            - Outputs.LaunchRoleName
+          - !Ref LaunchRoleName
+        PortfolioId: !Ref SCVPCIPV6portfolio
+        RepoRootURL: !Ref RepoRootURL
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-3public-3private-3nat.yaml'
+      TimeoutInMinutes: 5
+
+  vpcIPV6dualstack4public4private2natproduct:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        PortfolioProvider: !Ref PortfolioProvider
+        LaunchConstraintRole: !If 
+          - CreateLaunchConstraint
+          - !GetAtt 
+            - LaunchConstraintRole
+            - Outputs.LaunchRoleName
+          - !Ref LaunchRoleName
+        PortfolioId: !Ref SCVPCIPV6portfolio
+        RepoRootURL: !Ref RepoRootURL
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-4public-4private-2nat.yaml'
+      TimeoutInMinutes: 5
+
+Outputs:
+  LaunchConstraintRoleARN:
+    Condition: CreateLaunchConstraint
+    Value: !GetAtt 
+      - LaunchConstraintRole
+      - Outputs.LaunchRoleArn
+ 
+  LaunchConstraintRoleName:
+    Condition: CreateLaunchConstraint
+    Value: !GetAtt 
+      - LaunchConstraintRole
+      - Outputs.LaunchRoleName
+ 
+  vpcIPV6dualstack2privatesubnetsproductId:
+    Value: !GetAtt 
+      - vpcIPV6dualstack2privatesubnetsproduct
+      - Outputs.ProductId
+
+  vpcIPV6dualstack3privatesubnetsproductId:
+    Value: !GetAtt 
+      - vpcIPV6dualstack3privatesubnets
+      - Outputs.ProductId
+
+  vpcIPV6dualstack4privatesubnetsproductId:
+    Value: !GetAtt 
+      - vpcIPV6dualstack4privatesubnetsproduct
+      - Outputs.ProductId
+
+  vpcIPV6dualstack2public2privates1natsubnetsproductId:
+    Value: !GetAtt 
+      - vpcIPV6dualstack2public2privates1natsubnetsproduct
+      - Outputs.ProductId
+
+  vpcIPV6dualstack2public2privates2natsubnetsproductId:
+    Value: !GetAtt 
+      - vpcIPV6dualstack2public2privates2natsubnetsproduct
+      - Outputs.ProductId
+
+  vpcIPV6dualstack3public3privates1natsubnetsproductId:
+    Value: !GetAtt 
+      - vpcIPV6dualstack3public3privates1natsubnetsproduct
+      - Outputs.ProductId
+
+  vpcIPV6dualstack3public3privates2natsubnetsproductId:
+    Value: !GetAtt 
+      - vpcIPV6dualstack3public3privates2natsubnetsproduct
+      - Outputs.ProductId
+
+  vpcIPV6dualstack3public3privates3natsubnetsproductId:
+    Value: !GetAtt 
+      - vpcIPV6dualstack3public3privates3natsubnetsproduct
+      - Outputs.ProductId
+
+  vpcIPV6dualstack4public4privates2natsubnetsproductId:
+    Value: !GetAtt  
+      - vpcIPV6dualstack4public4privates2natsubnetsproduct
+      - Outputs.ProductId

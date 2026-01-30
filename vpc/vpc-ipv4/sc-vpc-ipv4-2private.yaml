@@ -1,0 +1,418 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template will create a VPC with 2 Private Subnets. Options to connect to Transit Gateway.
+Metadata:
+  AWS::CloudFormation::Interface:
+#==================================================
+# Parameter Groups
+#==================================================
+    ParameterGroups:
+      - Label:
+          default: VPC Configuration
+        Parameters:
+          - VPCCIDR
+      - Label:
+          default: Private Subnet Configuration        
+        Parameters:
+          - PrivateSubnet1CIDR
+          - PrivateSubnet2CIDR
+      - Label:
+          default:  Resource Naming
+        Parameters: 
+          - ResourcePrefix
+      - Label:
+          default: Configuration for Transit Gateway
+        Parameters:
+          - AttachToTGW
+          - AttachSubnet2ToTGW
+          - RoutingPolicy
+#==================================================
+# Parameter Labels
+#==================================================
+    ParameterLabels:
+      PrivateSubnet1CIDR:
+        default: Private subnet 1 CIDR
+      PrivateSubnet2CIDR:
+        default: Private subnet 2 CIDR      
+      VPCCIDR:
+        default: VPC CIDR 
+      ResourcePrefix:
+        default: Prefix assigned when naming resources
+      AttachToTGW:
+        default: Add TGAttachment to Private Subnet 1
+      AttachSubnet2ToTGW:
+        default: Add TGAttachment to Private Subnet 2
+      RoutingPolicy:
+        default:  The routing policy to apply to the VPC
+#==================================================
+# Parameters
+#==================================================
+Parameters:
+  ResourcePrefix:
+    Type: 'String'
+    Description: Prefix for the created resources (e.g. default-Public-Subnet1, default-Private-Subnet1, etc...).    
+  VPCCIDR:
+    Description: CIDR block for the VPC.
+    Type: String
+  PrivateSubnet1CIDR:
+    Description: CIDR block for private subnet 1 located in Availability Zone "a".
+    Type: String
+  PrivateSubnet2CIDR:
+    Description: CIDR block for private subnet 2A located in Availability Zone "b".
+    Type: String
+  AttachToTGW:
+    Description: Set to TRUE to create/add attachment. Set to FALSE to remove attachment
+    Type: String
+    Default: False
+    AllowedValues:
+    - True
+    - False
+  AttachSubnet2ToTGW:
+    Description: Set to TRUE to create/add attachment. Set to FALSE to remove attachment.
+    Type: String
+    Default: False
+    AllowedValues:
+    - True
+    - False  
+  RoutingPolicy:
+    Description: Adds the appropriate Associate-with and Propagate-to Tags based on Policy selected
+    Type: String
+    Default: None
+    AllowedValues:
+    - None
+    - RemoveAccess
+    - Standard
+    - InternetOnly
+#==================================================
+# Conditions
+#==================================================
+Conditions:
+  NVirginiaRegionCondition: !Equals [!Ref 'AWS::Region', us-east-1]
+  TGAttachmentCondition: !Equals [!Ref AttachToTGW, True]
+  TGAttachmentSubnet2Condition: !Equals [!Ref AttachSubnet2ToTGW, True]
+  AssociateStandardAccessCondition: !Equals [!Ref RoutingPolicy, Standard]
+  AssociateInternetOnlyCondition: !Equals [!Ref RoutingPolicy, InternetOnly]
+  RemoveAssociationCondition: !Equals [!Ref RoutingPolicy, RemoveAccess]
+  PropagateStandardAccessCondition: !Equals [!Ref RoutingPolicy, Standard]
+  PropagateInternetOnlyCondition: !Equals [!Ref RoutingPolicy, InternetOnly]
+  RemovePropagationCondition: !Equals [!Ref RoutingPolicy, RemoveAccess]
+
+Resources:
+# =======================================================
+# Base VPC
+# =======================================================
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref 'VPCCIDR'
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-VPC
+
+        # Adds tags for the Standard Policy 
+        - !If
+          - AssociateStandardAccessCondition
+          - Key: Associate-with
+            Value: Standard
+          - !Ref AWS::NoValue
+        - !If
+          - PropagateStandardAccessCondition
+          - Key: Propagate-to
+            Value: "DirectConnectGateway_RoutingDomain, OutboundVPC_RoutingDomain"
+          - !Ref AWS::NoValue          
+
+        # Adds tags for the InternetOnly Policy 
+        - !If
+          - AssociateInternetOnlyCondition
+          - Key: Associate-with
+            Value: InternetOnly
+          - !Ref AWS::NoValue
+        - !If
+          - PropagateInternetOnlyCondition
+          - Key: Propagate-to
+            Value: "OutboundVPC_RoutingDomain"
+          - !Ref AWS::NoValue
+
+        # Removes values from tags for the RemoveAccess Policy
+        - !If
+          - RemoveAssociationCondition
+          - Key: Associate-with
+            Value: BlackHole
+          - !Ref AWS::NoValue
+        - !If
+          - RemovePropagationCondition
+          - Key: Propagate-to
+            Value: BlackHole
+          - !Ref AWS::NoValue
+# =======================================================
+# DHCP Options
+# =======================================================
+  DHCPOptions:
+    Type: AWS::EC2::DHCPOptions
+    Properties:
+      DomainName: !If [NVirginiaRegionCondition, ec2.internal, !Join ['', [!Ref 'AWS::Region',
+            .compute.internal]]]
+      DomainNameServers:
+        - AmazonProvidedDNS
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-DHCPOptionsSet
+
+  VPCDHCPOptionsAssociation:
+    Type: AWS::EC2::VPCDHCPOptionsAssociation
+    Properties:
+      VpcId: !Ref 'VPC'
+      DhcpOptionsId: !Ref 'DHCPOptions'
+# =======================================================
+# Private Subnets
+# =======================================================
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet    
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !Ref 'PrivateSubnet1CIDR'
+      AvailabilityZone: !Sub ${AWS::Region}a
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet1
+        - !If
+          - TGAttachmentCondition
+          - Key: Attach-to-tgw
+            Value: ""
+          - !Ref AWS::NoValue
+
+  PrivateSubnet2:    
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !Ref 'PrivateSubnet2CIDR'
+      AvailabilityZone: !Sub ${AWS::Region}b
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet2
+        - !If
+          - TGAttachmentSubnet2Condition
+          - Key: Attach-to-tgw
+            Value: ""
+          - !Ref AWS::NoValue
+
+# =======================================================
+# Private routes and route tables
+# =======================================================
+  PrivateSubnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet1RouteTable
+
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PrivateSubnet1'
+      RouteTableId: !Ref 'PrivateSubnet1RouteTable'
+
+  PrivateSubnet2RouteTable:    
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet2RouteTable
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PrivateSubnet2'
+      RouteTableId: !Ref 'PrivateSubnet2RouteTable'
+# =======================================================
+# Flow Logs
+# =======================================================
+  VPCFlowLogsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 60
+
+  VPCFlowLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub MathRole-${ResourcePrefix}-VPCFlowLogsRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - vpc-flow-logs.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: MathPolicy-CreateLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogGroups
+              - logs:DescribeLogStreams
+              Effect: Allow
+              Resource: "*"
+
+  VPCFlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+        DeliverLogsPermissionArn: !GetAtt 'VPCFlowLogsRole.Arn'
+        LogGroupName: !Ref 'VPCFlowLogsLogGroup'
+        ResourceId: !Ref 'VPC'
+        ResourceType: VPC
+        TrafficType: ALL
+# =======================================================
+# Endpoints
+# =======================================================
+
+# =======================================================
+# Gateway endpoints
+# =======================================================
+  EndpointS3:
+    Type: AWS::EC2::VPCEndpoint    
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Gateway
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      RouteTableIds:
+        - !Ref 'PrivateSubnet1RouteTable'
+        - !Ref 'PrivateSubnet2RouteTable'
+
+# =======================================================
+# Interface endpoints
+# =======================================================
+
+  # security group for interface endpoints
+  EndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for VPC Endpoints
+      GroupName: !Sub ${ResourcePrefix}-VPCEndpoints-SG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref VPCCIDR
+      VpcId: !Ref VPC
+      Tags: 
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-VPCEndpoints-SG
+
+  # endpoints
+  EndpointKMS:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.kms
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      SubnetIds: 
+        - !Ref 'PrivateSubnet1'
+        - !Ref 'PrivateSubnet2'
+
+  EndpointCloudwatchLogs:
+    Type: AWS::EC2::VPCEndpoint    
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      SubnetIds:
+        - !Ref 'PrivateSubnet1'
+        - !Ref 'PrivateSubnet2'
+
+# =======================================================
+# Security Groups
+# =======================================================
+  RDPSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Provides RDP access from Mathematica IPs
+      GroupName: !Sub ${ResourcePrefix}-RDP-Access-From-Mathematica-SG
+      SecurityGroupEgress: 
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+          Description: Allows all outbound traffic
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 10.0.0.0/13
+          Description: Access from Mathematica Internal NJ1, DC1, NJ2, MI1, MA1, CA1, IL1, AZ1
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 10.8.0.0/15
+          Description: Access from Mathematica Internal MD1, NJ3
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 10.10.0.0/16
+          Description: Access from Mathematica Internal WA1
+      Tags: 
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-RDP-Access-From-Mathematica-SG
+      VpcId: !Ref VPC
+
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Provides SSH access from Mathematica IPs
+      GroupName: !Sub ${ResourcePrefix}-SSH-Access-From-Mathematica-SG
+      SecurityGroupEgress: 
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+          Description: Allows all outbound traffic
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.0.0.0/13
+          Description: Access from Mathematica Internal NJ1, DC1, NJ2, MI1, MA1, CA1, IL1, AZ1
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.8.0.0/15
+          Description: Access from Mathematica Internal MD1, NJ3
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.10.0.0/16
+          Description: Access from Mathematica Internal WA1
+      Tags: 
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-SSH-Access-From-Mathematica-SG
+      VpcId: !Ref VPC
+
+Outputs:
+
+ VPCID:
+   Description: The ID of the VPC
+   Value: !Ref VPC
+   Export:
+     Name: !Sub '${AWS::StackName}-VPCID'
+ PrivateSubnet1ID:
+   Description: The ID of Private Subnet 1
+   Value: !Ref PrivateSubnet1
+   Export:
+     Name: !Sub '${AWS::StackName}-PrivateSubnet1ID'
+ PrivateSubnet2ID:
+   Description: The ID of Private Subnet 2
+   Value: !Ref PrivateSubnet2
+   Export:
+     Name: !Sub '${AWS::StackName}-PrivateSubnet2ID'

@@ -12,7 +12,7 @@
         "Type" : "AWS::ServiceCatalog::TagOption",
         "Properties" : {
           "Active" : true,
-          "Value" : "PROD",
+          "Value" : "PRODUCTION",
           "Key" : "serviceEnvironment"
         }
       },
@@ -23,36 +23,51 @@
 	  	  "TagOptionId" : { "Ref" : "productEnvironmentProd" }
 	  	}
 	  },
-	  "productEnvironmentQA" : {
+	  "productEnvironmentStaging" : {
         "Type" : "AWS::ServiceCatalog::TagOption",
         "Properties" : {
           "Active" : true,
-          "Value" : "QA",
+          "Value" : "STAGING",
           "Key" : "serviceEnvironment"
         }
       },
-	  "productEnvironmentQAassoc":{
+	  "productEnvironmentStagingassoc":{
 	    "Type" : "AWS::ServiceCatalog::TagOptionAssociation",
 	    "Properties" : {
 	  	  "ResourceId" : {"Ref": "PortfolioId"},
-	  	  "TagOptionId" : { "Ref" : "productEnvironmentQA" }
+	  	  "TagOptionId" : { "Ref" : "productEnvironmentStaging" }
 	  	}
 	  },
-      "productEnvironmentDev" : {
+      "productEnvironmentDevelopment" : {
         "Type" : "AWS::ServiceCatalog::TagOption",
         "Properties" : {
           "Active" : true,
-          "Value" : "DEV",
+          "Value" : "DEVELOPMENT",
           "Key" : "serviceEnvironment"
         }
       },
-	  "productEnvironmentDevassoc":{
+	  "productEnvironmentDevelopmentassoc":{
 	    "Type" : "AWS::ServiceCatalog::TagOptionAssociation",
 	    "Properties" : {
 	  	  "ResourceId" : {"Ref": "PortfolioId"},
-	  	  "TagOptionId" : { "Ref" : "productEnvironmentDev" }
+	  	  "TagOptionId" : { "Ref" : "productEnvironmentDevelopment" }
 	  	}
 	  },
+      "productEnvironmentSandbox" : {
+        "Type" : "AWS::ServiceCatalog::TagOption",
+        "Properties" : {
+          "Active" : true,
+          "Value" : "SANDBOX",
+          "Key" : "serviceEnvironment"
+        }
+      },
+	  "productEnvironmentSandboxassoc":{
+	    "Type" : "AWS::ServiceCatalog::TagOptionAssociation",
+	    "Properties" : {
+	  	  "ResourceId" : {"Ref": "PortfolioId"},
+	  	  "TagOptionId" : { "Ref" : "productEnvironmentSandbox" }
+	  	}
+    },
       "ChargeBackDataInsights" : {
         "Type" : "AWS::ServiceCatalog::TagOption",
         "Properties" : {
@@ -66,36 +81,6 @@
 	    "Properties" : {
 	  	  "ResourceId" : {"Ref": "PortfolioId"},
 	  	  "TagOptionId" : { "Ref" : "ChargeBackDataInsights" }
-	  	}
-	  },
-      "ChargeBackMK" : {
-        "Type" : "AWS::ServiceCatalog::TagOption",
-        "Properties" : {
-          "Active" : true,
-          "Value" : "MARKETING",
-          "Key" : "Chargeback"
-        }
-      },
-	  "ChargeBackMKassoc":{
-	    "Type" : "AWS::ServiceCatalog::TagOptionAssociation",
-	    "Properties" : {
-	  	  "ResourceId" : {"Ref": "PortfolioId"},
-	  	  "TagOptionId" : { "Ref" : "ChargeBackMK" }
-	  	}
-	  },
-	  "ChargeBackSC" : {
-        "Type" : "AWS::ServiceCatalog::TagOption",
-        "Properties" : {
-          "Active" : true,
-          "Value" : "SUPPLYCHAIN",
-          "Key" : "Chargeback"
-        }
-      },
-	  "ChargeBackSCassoc":{
-	    "Type" : "AWS::ServiceCatalog::TagOptionAssociation",
-	    "Properties" : {
-	  	  "ResourceId" : {"Ref": "PortfolioId"},
-	  	  "TagOptionId" : { "Ref" : "ChargeBackSC" }
 	  	}
 	  },
       "ChargeBackAccounting" : {

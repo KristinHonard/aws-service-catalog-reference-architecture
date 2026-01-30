@@ -1,0 +1,627 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This cft will create a VPC with 3 Private DualStack Subnets, 3 IPv6Only Subnets with 1 Private Nat Gateway.
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+# #==================================================
+# # Parameter Groups
+# #==================================================
+
+    ParameterGroups:
+      - Label:
+          default: VPC Configuration
+        Parameters:
+          - VPCCIDR
+      - Label:
+          default: Private Subnet Configuration        
+        Parameters:
+          - PrivateSubnet1CIDR
+          - PrivateSubnet2CIDR
+          - PrivateSubnet3CIDR 
+      - Label:
+          default:  Resource Naming
+        Parameters: 
+          - ResourcePrefix
+
+# #==================================================
+# # Parameter Labels
+# #==================================================
+    ParameterLabels:
+      PrivateSubnet1CIDR:
+        default: Private subnet 1 CIDR
+      PrivateSubnet2CIDR:
+        default: Private subnet 2 CIDR      
+      PrivateSubnet3CIDR:
+        default: Private subnet 3 CIDR     
+      VPCCIDR:
+        default: VPC CIDR 
+      ResourcePrefix:
+        default: Prefix assigned when naming resources
+
+      
+# #==================================================
+# # Parameters
+# #==================================================
+
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Description: Prefix for the created resources (e.g. default-Public-Subnet1, default-Private-Subnet1, etc...).
+    Default: 'Default'
+
+  VPCCIDR:
+    Description: IPv4 CIDR block for the VPC.
+    Type: String
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IPv4 CIDR range of the form x.x.x.x/x
+
+  PrivateSubnet1CIDR:
+    Description: IPv4 CIDR block for private subnet 1 located in Availability Zone "a".
+    Type: String
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IPv4 CIDR range of the form x.x.x.x/x
+
+  PrivateSubnet2CIDR:
+    Description: IPv4 CIDR block for private subnet 2 located in Availability Zone "b".
+    Type: String
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IPv4 CIDR range of the form x.x.x.x/x
+
+  PrivateSubnet3CIDR:
+    Type: String
+    Description: CIDR block for the private subnet 3 located in Availability Zone "c".
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x 
+
+
+# #==================================================
+# # Conditions
+# #==================================================
+
+Conditions:
+
+  NVirginiaRegionCondition: !Equals [!Ref 'AWS::Region', us-east-1]
+
+
+Resources:
+
+# # =======================================================
+# # Base VPC
+# # =======================================================
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref 'VPCCIDR'
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-VPC
+
+
+  IPV6VPCCidrBlock:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+        AmazonProvidedIpv6CidrBlock: true
+        VpcId: !Ref VPC
+
+
+
+
+# # =======================================================
+# # DHCP Options
+# # =======================================================
+
+  DHCPOptions:
+    Type: AWS::EC2::DHCPOptions
+    Properties:
+      DomainName: !If [NVirginiaRegionCondition, ec2.internal, !Join ['', [!Ref 'AWS::Region',
+            .compute.internal]]]
+      DomainNameServers:
+        - AmazonProvidedDNS
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-DHCPOptionsSet
+
+  VPCDHCPOptionsAssociation:
+    Type: AWS::EC2::VPCDHCPOptionsAssociation
+    Properties:
+      VpcId: !Ref 'VPC'
+      DhcpOptionsId: !Ref 'DHCPOptions'
+
+
+# =======================================================
+# Egress Only Internet Gateway
+# =======================================================
+  IPv6InternetGateway:
+    Type: AWS::EC2::EgressOnlyInternetGateway
+    Properties: 
+        VpcId: !Ref VPC
+
+
+# # =======================================================
+# Dual-Stack Private Subnets
+# # =======================================================
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet  
+    DependsOn: IPV6VPCCidrBlock  
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !Ref 'PrivateSubnet1CIDR'
+      AvailabilityZoneId: use1-az2
+      Ipv6CidrBlock: !Select [ 0, !Cidr [ !Select [ 0, !GetAtt VPC.Ipv6CidrBlocks], 256, 64 ]]
+      AssignIpv6AddressOnCreation: true
+      PrivateDnsNameOptionsOnLaunch:
+        EnableResourceNameDnsAAAARecord: true
+        EnableResourceNameDnsARecord: true
+        HostnameType: ip-name
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-DualStack-PrivateSubnet1
+
+
+  PrivateSubnet2:    
+    Type: AWS::EC2::Subnet
+    DependsOn: IPV6VPCCidrBlock
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !Ref 'PrivateSubnet2CIDR'
+      AvailabilityZoneId: use1-az4
+      Ipv6CidrBlock: !Select [ 1, !Cidr [ !Select [ 0, !GetAtt VPC.Ipv6CidrBlocks], 256, 64 ]]
+      AssignIpv6AddressOnCreation: true
+      PrivateDnsNameOptionsOnLaunch:
+        EnableResourceNameDnsAAAARecord: true
+        EnableResourceNameDnsARecord: true
+        HostnameType: ip-name      
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-DualStack-PrivateSubnet2
+
+
+  PrivateSubnet3:    
+    Type: AWS::EC2::Subnet
+    DependsOn: IPV6VPCCidrBlock
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !Ref 'PrivateSubnet3CIDR'
+      AvailabilityZoneId: use1-az6
+      Ipv6CidrBlock: !Select [ 2, !Cidr [ !Select [ 0, !GetAtt VPC.Ipv6CidrBlocks], 256, 64 ]]
+      AssignIpv6AddressOnCreation: true
+      PrivateDnsNameOptionsOnLaunch:
+        EnableResourceNameDnsAAAARecord: true
+        EnableResourceNameDnsARecord: true
+        HostnameType: ip-name
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-DualStack-PrivateSubnet3
+
+# # =======================================================
+# Dual-Stack Private Subnets routes and route tables
+# # =======================================================
+
+  PrivateSubnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-DualStack-PrivateSubnet1RouteTable
+
+
+ PrivateSubnet1EIGWRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'PrivateSubnet1RouteTable'
+      DestinationIpv6CidrBlock: '::/0'
+      EgressOnlyInternetGatewayId: !Ref 'IPv6InternetGateway'
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PrivateSubnet1'
+      RouteTableId: !Ref 'PrivateSubnet1RouteTable'
+
+  PrivateSubnet2RouteTable:    
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-DualStack-PrivateSubnet2RouteTable
+
+  PrivateSubnet2EIGWRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'PrivateSubnet2RouteTable'
+      DestinationIpv6CidrBlock: '::/0'
+      EgressOnlyInternetGatewayId: !Ref 'IPv6InternetGateway'
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PrivateSubnet2'
+      RouteTableId: !Ref 'PrivateSubnet2RouteTable'
+
+  PrivateSubnet3RouteTable:    
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-DualStack-PrivateSubnet3RouteTable
+
+  PrivateSubnet3EIGWRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'PrivateSubnet3RouteTable'
+      DestinationIpv6CidrBlock: '::/0'
+      EgressOnlyInternetGatewayId: !Ref 'IPv6InternetGateway'
+
+
+  PrivateSubnet3RouteTableAssociation:    
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PrivateSubnet3'
+      RouteTableId: !Ref 'PrivateSubnet3RouteTable'
+
+
+# =======================================================
+# IPv6 Only Subnets
+# =======================================================
+
+  IPv6PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: IPV6VPCCidrBlock
+    Properties:
+      VpcId: !Ref 'VPC'
+      AvailabilityZoneId: use1-az2
+      Ipv6CidrBlock: !Select [ 6, !Cidr [ !Select [ 0, !GetAtt VPC.Ipv6CidrBlocks], 256, 64 ]]
+      Ipv6Native: true
+      EnableDns64: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-IPv6Only-PrivateSubnet1
+
+  IPv6PrivateSubnet2:    
+    Type: AWS::EC2::Subnet
+    DependsOn: IPV6VPCCidrBlock
+    Properties:
+      VpcId: !Ref 'VPC'
+      AvailabilityZoneId: use1-az4
+      Ipv6CidrBlock: !Select [ 7, !Cidr [ !Select [ 0, !GetAtt VPC.Ipv6CidrBlocks], 256, 64 ]]
+      Ipv6Native: true
+      EnableDns64: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-IPv6Only-PrivateSubnet2
+
+  IPv6PrivateSubnet3:    
+    Type: AWS::EC2::Subnet
+    DependsOn: IPV6VPCCidrBlock
+    Properties:
+      VpcId: !Ref 'VPC'
+      AvailabilityZoneId: use1-az6
+      Ipv6CidrBlock: !Select [ 8, !Cidr [ !Select [ 0, !GetAtt VPC.Ipv6CidrBlocks], 256, 64 ]]
+      Ipv6Native: true
+      EnableDns64: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-IPv6Only-PrivateSubnet3
+
+
+
+
+# # =======================================================
+# # IPv6 Only routes and route tables
+# # =======================================================
+  IPv6PrivateSubnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-IPv6Only-PrivateSubnet1RouteTable
+
+ IPv6PrivateSubnet1EIGWRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'IPv6PrivateSubnet1RouteTable'
+      DestinationIpv6CidrBlock: '::/0'
+      EgressOnlyInternetGatewayId: !Ref 'IPv6InternetGateway'
+
+  IPv6PrivateSubnet1NatGatewayIdRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'IPv6PrivateSubnet1RouteTable'
+      DestinationIpv6CidrBlock: '64:ff9b::/96'
+      NatGatewayId: !Ref 'NATGateway1'
+
+  IPv6PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'IPv6PrivateSubnet1'
+      RouteTableId: !Ref 'IPv6PrivateSubnet1RouteTable'
+
+  IPv6PrivateSubnet2RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-IPv6Only-PrivateSubnet2RouteTable
+
+  IPv6PrivateSubnet2EIGWRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'IPv6PrivateSubnet2RouteTable'
+      DestinationIpv6CidrBlock: '::/0'
+      EgressOnlyInternetGatewayId: !Ref 'IPv6InternetGateway'
+
+  IPv6PrivateSubnet2NatGatewayIdRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'IPv6PrivateSubnet2RouteTable'
+      DestinationIpv6CidrBlock: '64:ff9b::/96'
+      NatGatewayId: !Ref 'NATGateway1'
+
+  IPv6PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'IPv6PrivateSubnet2'
+      RouteTableId: !Ref 'IPv6PrivateSubnet2RouteTable'
+
+
+  IPv6PrivateSubnet3RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-IPv6Only-PrivateSubnet3RouteTable
+
+  IPv6PrivateSubnet3EIGWRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'IPv6PrivateSubnet3RouteTable'
+      DestinationIpv6CidrBlock: '::/0'
+      EgressOnlyInternetGatewayId: !Ref 'IPv6InternetGateway'
+
+
+  IPv6PrivateSubnet3NatGatewayIdRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'IPv6PrivateSubnet3RouteTable'
+      DestinationIpv6CidrBlock: '64:ff9b::/96'
+      NatGatewayId: !Ref 'NATGateway1'
+
+  IPv6PrivateSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'IPv6PrivateSubnet3'
+      RouteTableId: !Ref 'IPv6PrivateSubnet3RouteTable'
+
+      
+# =======================================================
+# NAT Gateway
+# =======================================================
+
+  NATGateway1:    
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      ConnectivityType: private
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-Private-NATGateway1
+
+
+# # =======================================================
+# # Flow Logs
+# # =======================================================
+
+  VPCFlowLogsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/Mathematica/${AWS::StackName}/${ResourcePrefix}-VPC/flowlogs'    
+      RetentionInDays: 90
+
+  VPCFlowLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub MathRole-${ResourcePrefix}-VPCFlowLogsRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - vpc-flow-logs.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: MathPolicy-CreateLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogGroups
+              - logs:DescribeLogStreams
+              Effect: Allow
+              Resource: !Sub "arn:aws:logs:${AWS::Region}:*:log-group:/Mathematica/${AWS::StackName}/${ResourcePrefix}-VPC/flowlogs:*"
+
+  VPCFlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+        DeliverLogsPermissionArn: !GetAtt 'VPCFlowLogsRole.Arn'
+        LogGroupName: !Sub '/Mathematica/${AWS::StackName}/${ResourcePrefix}-VPC/flowlogs'
+        ResourceId: !Ref 'VPC'
+        ResourceType: VPC
+        TrafficType: ALL
+
+# # =======================================================
+# # Endpoints
+# # =======================================================
+
+# # =======================================================
+# # Gateway Endpoints
+# # =======================================================
+
+  EndpointS3:
+    Type: AWS::EC2::VPCEndpoint    
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Gateway
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      RouteTableIds:
+        - !Ref 'PrivateSubnet1RouteTable'
+        - !Ref 'PrivateSubnet2RouteTable'
+        - !Ref 'PrivateSubnet3RouteTable'
+
+# # =======================================================
+# # Interface endpoints
+# # =======================================================
+
+  EndpointKMS:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.kms
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      SubnetIds: 
+        - !Ref 'PrivateSubnet1'
+        - !Ref 'PrivateSubnet2'
+        - !Ref 'PrivateSubnet3'
+
+  EndpointCloudwatchLogs:
+    Type: AWS::EC2::VPCEndpoint    
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      SubnetIds:
+        - !Ref 'PrivateSubnet1'
+        - !Ref 'PrivateSubnet2'
+        - !Ref 'PrivateSubnet3'
+
+  EndpointSSM:
+    Type: AWS::EC2::VPCEndpoint    
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      SubnetIds:
+        - !Ref 'PrivateSubnet1'
+        - !Ref 'PrivateSubnet2'
+        - !Ref 'PrivateSubnet3'    
+
+  Endpointssmmessages:
+    Type: AWS::EC2::VPCEndpoint    
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssmmessages
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      SubnetIds:
+        - !Ref 'PrivateSubnet1'
+        - !Ref 'PrivateSubnet2'
+        - !Ref 'PrivateSubnet3' 
+
+  Endpointec2messages:
+    Type: AWS::EC2::VPCEndpoint    
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ec2messages
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      SubnetIds:
+        - !Ref 'PrivateSubnet1'
+        - !Ref 'PrivateSubnet2'
+        - !Ref 'PrivateSubnet3'
+
+# #=======================================================
+# # Security Group for Interface endpoints
+# #=======================================================
+
+  EndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for VPC Endpoints
+      GroupName: !Sub ${ResourcePrefix}-VPCEndpoints-SG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref VPCCIDR
+      VpcId: !Ref VPC
+      Tags: 
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-VPCEndpoints-SG
+
+
+
+
+Outputs:
+
+  VPCID:
+    Description: The ID of the VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub '${AWS::StackName}-VPCID'
+  PrivateSubnet1ID:
+    Description: The ID of Private Subnet 1
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateSubnet1ID'
+  PrivateSubnet2ID:
+    Description: The ID of Private Subnet 2
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateSubnet2ID'
+  PrivateSubnet3ID:
+    Description: The ID of Private Subnet 3
+    Value: !Ref PrivateSubnet3
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateSubnet3ID'
+  PrivateIPV6Subnet1ID:
+    Description: The ID of IPv6 Private Subnet 1
+    Value: !Ref IPv6PrivateSubnet1
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateIPv6Subnet1ID'
+  PrivateIPV6Subnet2ID:
+    Description: The ID of IPv6 Private Subnet 2
+    Value: !Ref IPv6PrivateSubnet2
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateIPv6Subnet2ID'      
+  PrivateIPV6Subnet3ID:
+    Description: The ID of IPv6 Private Subnet 3
+    Value: !Ref IPv6PrivateSubnet3
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateIPv6Subnet3ID'        

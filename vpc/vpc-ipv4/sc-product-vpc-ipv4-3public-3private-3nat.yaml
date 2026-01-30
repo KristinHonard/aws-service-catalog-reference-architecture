@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: VPC IPv4 3 Public 3 Private 3 NAT Subnets ServiceCatalog product.
+
+Parameters:
+  PortfolioProvider:
+    Type: String
+    Description: Provider Name
+
+  LaunchConstraintRole:
+    Type: String
+    Description: Launch constraint role for EC2 products.
+
+  PortfolioId:
+    Type: String
+    Description: The SC portfolio this product will be attached to.
+
+  RepoRootURL:
+    Type: String
+    Description: Root url for the repo containing the product templates.
+
+Resources:
+  VPCIPv43Public3Private3NATSubnetsProduct:
+    Type: AWS::ServiceCatalog::CloudFormationProduct
+    Properties:
+      Name: VPC IPv4 3 Public 3 Private 3 NAT Subnets
+      Description: This CloudFormation template creates a securely configured Amazon VPC with IPv4, 3 public subnets, 3 private subnets, and 3 NAT gateways.
+      Owner: !Ref PortfolioProvider
+      Distributor: !Ref PortfolioProvider
+      SupportDescription: ITS Cloud Support
+      SupportEmail: ITSCloudSupport@mathematica-mpr.com
+      AcceptLanguage: en
+      SupportUrl: https://mathematica.service-now.com/mpr?id=emp_taxonomy_topic&topic_id=89bd521087401e10c05ab9d6cebb35f2
+      ProductType: CLOUD_FORMATION_TEMPLATE
+      ProvisioningArtifactParameters:
+        - Description: VPC IPv4 3 Public 3 Private 3 NAT Subnets
+          Info:
+            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv4/sc-vpc-ipv4-3public-3private-3nat.yaml'
+          Name: VPC IPv4 3 Public 3 Private 3 NAT Subnets v1.0.0
+  AssociateVPCIPv43Public3Private3NATSubnetsProduct:
+    Type: AWS::ServiceCatalog::PortfolioProductAssociation
+    Properties:
+      PortfolioId: !Ref PortfolioId
+      ProductId: !Ref VPCIPv43Public3Private3NATSubnetsProduct
+
+  constraintVPCIPv43Public3Private3NATSubnets:
+    Type: AWS::ServiceCatalog::LaunchRoleConstraint
+    DependsOn: AssociateVPCIPv43Public3Private3NATSubnetsProduct
+    Properties:
+      PortfolioId: !Ref PortfolioId
+      ProductId: !Ref VPCIPv43Public3Private3NATSubnetsProduct
+      LocalRoleName: !Ref LaunchConstraintRole
+      Description: !Ref LaunchConstraintRole
+
+Outputs:
+  ProductId:
+    Value: !Ref VPCIPv43Public3Private3NATSubnetsProduct

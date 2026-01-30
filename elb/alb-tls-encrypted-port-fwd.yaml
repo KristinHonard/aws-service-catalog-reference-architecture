@@ -1,0 +1,371 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Secure EC2 instance behind Application Load Balancer with SSL/TLS best practices'
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID where resources will be deployed
+  
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Public subnets for ALB (minimum 2 in different AZs)
+  
+  CreateNewInstance:
+    Type: String
+    Default: 'true'
+    Description: Create a new EC2 instance or use existing instances?
+    AllowedValues:
+      - 'true'
+      - 'false'
+  
+  # Parameters for creating new instance
+  PrivateSubnetId:
+    Type: String
+    Description: Private subnet for EC2 instance (required if CreateNewInstance is true)
+    Default: ''
+  
+  InstanceType:
+    Type: String
+    Default: t3.medium
+    Description: EC2 instance type (used if CreateNewInstance is true)
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+  
+  LatestAmiId:
+    Type: String
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: Latest Amazon Linux 2023 AMI (used if CreateNewInstance is true)
+  
+  # Parameters for using existing instances
+  ExistingInstanceIds:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of existing EC2 instance IDs (required if CreateNewInstance is false)
+    Default: ''
+  
+  DomainName:
+    Type: String
+    Description: Domain name for SSL certificate (e.g., example.com or *.example.com)
+    AllowedPattern: '^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
+
+Conditions:
+  CreateInstance: !Equals [!Ref CreateNewInstance, 'true']
+  UseExistingInstances: !Equals [!Ref CreateNewInstance, 'false']
+
+Resources:
+  # ACM Certificate with automatic DNS validation
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-cert'
+
+  # Security Group for ALB - Least privilege
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-alb-sg'
+      GroupDescription: Security group for Application Load Balancer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS from internet
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP from internet for redirect
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          DestinationSecurityGroupId: !Ref EC2SecurityGroup
+          Description: HTTP to EC2 instances
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-alb-sg'
+
+  # Security Group for EC2 - Least privilege
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${AWS::StackName}-ec2-sg'
+      GroupDescription: Security group for EC2 instances
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+          Description: HTTP from ALB only
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS for updates
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP for package repos
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-ec2-sg'
+
+  # Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${AWS::StackName}-alb'
+      Type: application
+      Scheme: internet-facing
+      IpAddressType: ipv4
+      Subnets: !Ref PublicSubnetIds
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-alb'
+
+  # Target Group
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${AWS::StackName}-tg'
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      TargetType: instance
+      HealthCheckEnabled: true
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-tg'
+
+  # HTTPS Listener with strong security policy
+  HTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      Certificates:
+        - CertificateArn: !Ref Certificate
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # HTTP Listener - Redirect to HTTPS
+  HTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: '443'
+            StatusCode: HTTP_301
+
+  # IAM Role for EC2 Instance - Only created if CreateInstance is true
+  EC2Role:
+    Type: AWS::IAM::Role
+    Condition: CreateInstance
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-ec2-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-ec2-role'
+
+  # Instance Profile - Only created if CreateInstance is true
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Condition: CreateInstance
+    Properties:
+      InstanceProfileName: !Sub '${AWS::StackName}-ec2-profile'
+      Roles:
+        - !Ref EC2Role
+
+  # EC2 Instance - Only created if CreateInstance is true
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Condition: CreateInstance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Sub '{{resolve:ssm:${LatestAmiId}}}'
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SubnetId: !Ref PrivateSubnetId
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          dnf update -y
+          dnf install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          
+          cat > /var/www/html/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Secure ALB Demo</title>
+          </head>
+          <body>
+              <h1>Success! You're accessing a secure application.</h1>
+              <p>This EC2 instance is behind an Application Load Balancer with:</p>
+              <ul>
+                  <li>HTTP to HTTPS redirect</li>
+                  <li>TLS 1.2+ with strong ciphers only</li>
+                  <li>ACM certificate with automatic rotation</li>
+                  <li>Least-privilege security groups</li>
+              </ul>
+          </body>
+          </html>
+          EOF
+          
+          chmod 644 /var/www/html/index.html
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-ec2'
+
+  # Register new EC2 instance with Target Group
+  NewInstanceAttachment:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: CreateInstance
+    Properties:
+      TargetGroupArn: !Ref TargetGroup
+      TargetId: !Ref EC2Instance
+      Port: 80
+
+  # Register existing instances with Target Group
+  ExistingInstance1Attachment:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: UseExistingInstances
+    Properties:
+      TargetGroupArn: !Ref TargetGroup
+      TargetId: !Select [0, !Ref ExistingInstanceIds]
+      Port: 80
+
+  ExistingInstance2Attachment:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: UseExistingInstances
+    Properties:
+      TargetGroupArn: !Ref TargetGroup
+      TargetId: !If 
+        - UseExistingInstances
+        - !Select [1, !Ref ExistingInstanceIds]
+        - !Ref AWS::NoValue
+      Port: 80
+
+  ExistingInstance3Attachment:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: UseExistingInstances
+    Properties:
+      TargetGroupArn: !Ref TargetGroup
+      TargetId: !If 
+        - UseExistingInstances
+        - !Select [2, !Ref ExistingInstanceIds]
+        - !Ref AWS::NoValue
+      Port: 80
+
+  ExistingInstance4Attachment:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: UseExistingInstances
+    Properties:
+      TargetGroupArn: !Ref TargetGroup
+      TargetId: !If 
+        - UseExistingInstances
+        - !Select [3, !Ref ExistingInstanceIds]
+        - !Ref AWS::NoValue
+      Port: 80
+
+  ExistingInstance5Attachment:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: UseExistingInstances
+    Properties:
+      TargetGroupArn: !Ref TargetGroup
+      TargetId: !If 
+        - UseExistingInstances
+        - !Select [4, !Ref ExistingInstanceIds]
+        - !Ref AWS::NoValue
+      Port: 80
+
+Outputs:
+  LoadBalancerDNS:
+    Description: DNS name of the Application Load Balancer
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub '${AWS::StackName}-alb-dns'
+  
+  LoadBalancerURL:
+    Description: URL of the Application Load Balancer
+    Value: !Sub 'https://${ApplicationLoadBalancer.DNSName}'
+  
+  CertificateArn:
+    Description: ARN of the ACM certificate
+    Value: !Ref Certificate
+    Export:
+      Name: !Sub '${AWS::StackName}-cert-arn'
+  
+  CertificateValidationInstructions:
+    Description: Next steps for certificate validation
+    Value: !Sub |
+      1. Go to ACM console: https://console.aws.amazon.com/acm/
+      2. Find certificate for domain: ${DomainName}
+      3. Copy the CNAME record name and value
+      4. Add the CNAME record to your DNS provider
+      5. Wait for validation (can take 5-30 minutes)
+      6. Point your domain's A record to the ALB DNS: ${ApplicationLoadBalancer.DNSName}
+  
+  SecurityPolicy:
+    Description: SSL/TLS Security Policy Applied
+    Value: ELBSecurityPolicy-TLS13-1-2-2021-06
+  
+  EC2SecurityGroupId:
+    Description: Security Group ID for EC2 instances (attach to existing instances if using them)
+    Value: !Ref EC2SecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-ec2-sg-id'
+  
+  EC2InstanceId:
+    Description: Instance ID of the EC2 server (if created by this stack)
+    Condition: CreateInstance
+    Value: !Ref EC2Instance
+    Export:
+      Name: !Sub '${AWS::StackName}-instance-id'
+  
+  ExistingInstancesUsed:
+    Description: Existing instance IDs registered with the ALB
+    Condition: UseExistingInstances
+    Value: !Join [', ', !Ref ExistingInstanceIds]
+  
+  DeploymentMode:
+    Description: Instance deployment mode used
+    Value: !If [CreateInstance, 'New EC2 instance created', 'Using existing EC2 instances']

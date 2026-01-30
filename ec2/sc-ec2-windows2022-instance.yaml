@@ -1,0 +1,225 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'EC2 deployment with security hardening (IMDSv2, encrypted EBS, IAM roles, SSM Session Manager), operational monitoring (CloudWatch alarms, centralized logging, detailed metrics), and infrastructure best practices (VPC isolation, EBS optimization, gp3 volumes, proper tagging). Includes automated agent installation, parameter validation, and organized parameter groups for easy deployment. Uses latest golden Mathematica Windows 2022 AMI from SSM Parameter Store.'
+
+Parameters:
+  Windows2022Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+  Windows2022InstanceName:
+    Type: String
+    Default: 'MyWindowsInstance'
+    Description: Name tag for the EC2 instance  
+
+  Windows2022InstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+    Description: EC2 instance type
+
+  Windows2022Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: Select subnet for Windows 2022 Instance
+    ConstraintDescription: Must be an existing subnet
+
+  Windows2022LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: Windows2022AMI
+    Description: Latest Mathematica Windows 2022 AMI ID from SSM Parameter Store
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Instance Configuration
+        Parameters:
+          - Windows2022Environment
+          - Windows2022InstanceType
+          - Windows2022LatestAmiId
+
+Resources:
+  Windows2022EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${Windows2022InstanceName}-ec2-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Tags:
+        - Key: Name
+          Value: !Sub '${Windows2022InstanceName}-role'
+        - Key: its:products:serviceName
+          Value: iam
+        - Key: its:products:resourceType
+          Value: role
+
+  Windows2022EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub '${Windows2022InstanceName}-instance-profile'
+      Roles:
+        - !Ref Windows2022EC2InstanceRole
+      Tags:
+        - Key: its:products:serviceName
+          Value: iam
+        - Key: its:products:resourceType
+          Value: profile
+
+  Windows2022EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref Windows2022LatestAmiId
+      InstanceType: !Ref Windows2022InstanceType
+      IamInstanceProfile: !Ref Windows2022EC2InstanceProfile
+      SubnetId: !Ref Windows2022Subnet
+      Monitoring: true
+      EbsOptimized: true
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 100
+            DeleteOnTermination: true
+            Encrypted: true
+            Iops: 3000
+      MetadataOptions:
+        HttpTokens: required
+        HttpPutResponseHopLimit: 1
+        HttpEndpoint: enabled
+      UserData:
+        Fn::Base64:
+          <powershell>
+          # Set strict error handling
+          $ErrorActionPreference = "Stop"
+          
+          # Install CloudWatch agent
+          $cwAgentUrl = "https://s3.amazonaws.com/amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi"
+          $cwAgentPath = "$env:TEMP\amazon-cloudwatch-agent.msi"
+          Invoke-WebRequest -Uri $cwAgentUrl -OutFile $cwAgentPath
+          Start-Process msiexec.exe -ArgumentList "/i $cwAgentPath /qn" -Wait
+          
+          # Install SSM agent (usually pre-installed on Windows AMIs)
+          # Verify SSM agent is running
+          $ssmService = Get-Service -Name "AmazonSSMAgent" -ErrorAction SilentlyContinue
+          if ($ssmService) {
+              Set-Service -Name "AmazonSSMAgent" -StartupType Automatic
+              Start-Service -Name "AmazonSSMAgent"
+          }
+          
+          # Start CloudWatch agent with existing config from AMI
+          & "C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1" `
+              -a fetch-config `
+              -m ec2 `
+              -s
+          
+          # Configure Windows Firewall (optional - customize as needed)
+          # New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Inbound -LocalPort 443 -Protocol TCP -Action Allow
+          
+          # Set timezone (optional)
+          Set-TimeZone -Id "Eastern Standard Time"
+          
+          # Enable Windows Update (optional)
+          # Set-Service -Name wuauserv -StartupType Automatic
+          # Start-Service -Name wuauserv
+          
+          Write-Host "User data script completed successfully"
+          </powershell>
+          <persist>true</persist>
+      Tags:
+        - Key: Name
+          Value: !Sub '${Windows2022InstanceName}-instance'
+        - Key: Environment
+          Value: !Ref Windows2022Environment
+        - Key: its:products:serviceName
+          Value: ec2
+        - Key: its:products:resourceType
+          Value: instance
+        - Key: its:products:osType
+          Value: Windows2022
+  # CloudWatch Log Group
+  Windows2022LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/ec2/logs/${Windows2022InstanceName}'
+      RetentionInDays: 7
+      Tags:
+        - Key: its:products:serviceName
+          Value: cloudwatch
+        - Key: its:products:resourceType
+          Value: logGroup
+
+  # CloudWatch Alarms for monitoring
+  Windows2022CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Windows2022InstanceName}-high-cpu'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2022InstanceName} (${Windows2022InstanceId}) CPU exceeds 80%'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref Windows2022EC2Instance
+      Tags:
+        - Key: its:products:serviceName
+          Value: cloudwatch
+        - Key: its:products:resourceType
+          Value: alarm
+
+  Windows2022StatusCheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Windows2022InstanceName}-status-check-failed'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2022InstanceName} (${Windows2022InstanceId}) instance status checks fail'
+      MetricName: StatusCheckFailed
+      Namespace: AWS/EC2
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref Windows2022EC2Instance
+      Tags:
+        - Key: its:products:serviceName
+          Value: cloudwatch
+        - Key: its:products:resourceType
+          Value: alarm
+
+Outputs:
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref Windows2022EC2Instance
+    Export:
+      Name: !Sub '${Windows2022InstanceName}-InstanceId'
+
+  PrivateIP:
+    Description: Private IP address
+    Value: !GetAtt Windows2022EC2Instance.PrivateIp
+  
+  SSMSessionCommand:
+    Description: Command to connect via SSM Session Manager
+    Value: !Sub 'aws ssm start-session --target ${Windows2022EC2Instance}'
+  

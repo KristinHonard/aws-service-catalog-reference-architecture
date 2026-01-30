@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: VPC IPv6 Dualstack 3 Public 3 Private Subnets 2 NAT ServiceCatalog product.
+
+Parameters:
+  PortfolioProvider:
+    Type: String
+    Description: Provider Name
+
+  LaunchConstraintRole:
+    Type: String
+    Description: Launch constraint role for EC2 products.
+
+  PortfolioId:
+    Type: String
+    Description: The SC portfolio this product will be attached to.
+
+  RepoRootURL:
+    Type: String
+    Description: Root url for the repo containing the product templates.
+
+Resources:
+  VPCIPv6Dualstack3Public3Private2NATProduct:
+    Type: AWS::ServiceCatalog::CloudFormationProduct
+    Properties:
+      Name: VPC IPv6 Dualstack 3 Public 3 Private Subnets 2 NAT
+      Description: This CloudFormation template creates a securely configured Amazon VPC with IPv6 dualstack, 3 public subnets, 3 private subnets, and 2 NAT gateways.
+      Owner: !Ref PortfolioProvider
+      Distributor: !Ref PortfolioProvider
+      SupportDescription: ITS Cloud Support
+      SupportEmail: ITSCloudSupport@mathematica-mpr.com
+      AcceptLanguage: en
+      SupportUrl: https://mathematica.service-now.com/mpr?id=emp_taxonomy_topic&topic_id=89bd521087401e10c05ab9d6cebb35f2
+      ProductType: CLOUD_FORMATION_TEMPLATE
+      ProvisioningArtifactParameters:
+        - Description: VPC IPv6 Dualstack 3 Public 3 Private Subnets 2 NAT
+          Info:
+            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-vpc-ipv6-dualstack-3public-3private-2nat.yaml'
+          Name: VPC IPv6 Dualstack 3 Public 3 Private Subnets 2 NAT v1.0.0
+  AssociateVPCIPv6Dualstack3Public3Private2NATProduct:
+    Type: AWS::ServiceCatalog::PortfolioProductAssociation
+    Properties:
+      PortfolioId: !Ref PortfolioId
+      ProductId: !Ref VPCIPv6Dualstack3Public3Private2NATProduct
+
+  constraintVPCIPv6Dualstack3Public3Private2NAT:
+    Type: AWS::ServiceCatalog::LaunchRoleConstraint
+    DependsOn: AssociateVPCIPv6Dualstack3Public3Private2NATProduct
+    Properties:
+      PortfolioId: !Ref PortfolioId
+      ProductId: !Ref VPCIPv6Dualstack3Public3Private2NATProduct
+      LocalRoleName: !Ref LaunchConstraintRole
+      Description: !Ref LaunchConstraintRole
+
+Outputs:
+  ProductId:
+    Value: !Ref VPCIPv6Dualstack3Public3Private2NATProduct

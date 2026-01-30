@@ -1,0 +1,199 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'EC2 deployment with security hardening (IMDSv2, encrypted EBS, IAM roles, SSM Session Manager), operational monitoring (CloudWatch alarms, centralized logging, detailed metrics), and infrastructure best practices (VPC isolation, EBS optimization, gp3 volumes, proper tagging). Includes automated agent installation, parameter validation, and organized parameter groups for easy deployment. Uses latest golden Mathematica Amazon Linux 2023 AMI from SSM Parameter Store.'
+
+Parameters:
+  Linux2023Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+  Linux2023InstanceName:
+    Type: String
+    Default: 'MyLinux2023Instance'
+    Description: Name tag for the EC2 instance  
+
+  Linux2023InstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+    Description: EC2 instance type
+
+  Linux2023VPC:
+
+  Linux2023Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: Select subnet for Linux Instance
+    ConstraintDescription: Must be an existing subnet
+
+  Linux2023LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: Linux2023AMI
+    Description: Latest Mathematica Amazon Linux 2023 AMI ID from SSM Parameter Store
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Instance Configuration
+        Parameters:
+          - Linux2023Environment
+          - Linux2023InstanceType
+          - Linux2023LatestAmiId
+
+Resources:
+  Linux2023EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${Linux2023InstanceName}-ec2-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Tags:
+        - Key: Name
+          Value: !Sub '${Linux2023InstanceName}-role'
+        - Key: its:products:serviceName
+          Value: iam
+        - Key: its:products:resourceType
+          Value: role
+  Linux2023EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub '${Linux2023InstanceName}-instance-profile'
+      Roles:
+        - !Ref Linux2023EC2InstanceRole
+      Tags:
+        - Key: its:products:serviceName
+          Value: iam
+        - Key: its:products:resourceType
+          Value: profile
+  Linux2023EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref Linux2023LatestAmiId
+      InstanceType: !Ref Linux2023InstanceType
+      IamInstanceProfile: !Ref Linux2023EC2InstanceProfile
+      SubnetId: !Ref Linux2023Subnet
+      Monitoring: true
+      EbsOptimized: true
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 100
+            DeleteOnTermination: true
+            Encrypted: true
+            Iops: 3000
+      MetadataOptions:
+        HttpTokens: required
+        HttpPutResponseHopLimit: 1
+        HttpEndpoint: enabled
+      UserData:
+        Fn::Base64:
+          #!/bin/bash
+          set -e
+          # Update system
+          dnf update -y
+          # Install CloudWatch agent
+          dnf install -y amazon-cloudwatch-agent
+          # Install SSM agent (usually pre-installed on Amazon Linux 2023)
+          dnf install -y amazon-ssm-agent
+          systemctl enable amazon-ssm-agent
+          systemctl start amazon-ssm-agent
+          # Start CloudWatch agent with existing config from AMI
+          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+            -a fetch-config \
+            -m ec2 \
+            -s
+      Tags:
+        - Key: Name
+          Value: !Sub '${Linux2023InstanceName}-instance'
+        - Key: Environment
+          Value: !Ref Linux2023Environment
+        - Key: its:products:serviceName
+          Value: ec2
+        - Key: its:products:resourceType
+          Value: instance
+        - Key: its:products:osType
+          Value: Linux2023
+
+  Linux2023LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/ec2/logs/${Linux2023InstanceName}'
+      RetentionInDays: 7
+      Tags:
+        - Key: its:products:serviceName
+          Value: cloudwatch
+        - Key: its:products:resourceType
+          Value: logGroup
+  Linux2023CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Linux2023InstanceName}-high-cpu'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Linux2023InstanceName} (${Linux2023InstanceId}) CPU exceeds 80%'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref Linux2023EC2Instance
+      Tags:
+        - Key: its:products:serviceName
+          Value: cloudwatch
+        - Key: its:products:resourceType
+          Value: alarm
+  Linux2023StatusCheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Linux2023InstanceName}-status-check-failed'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Linux2023InstanceName} (${Linux2023InstanceId}) instance status checks fail'
+      MetricName: StatusCheckFailed
+      Namespace: AWS/EC2
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref Linux2023EC2Instance
+      Tags:
+        - Key: its:products:serviceName
+          Value: cloudwatch
+        - Key: its:products:resourceType
+          Value: alarm
+Outputs:
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref Linux2023EC2Instance
+    Export:
+      Name: !Sub '${Linux2023InstanceName}-InstanceId'
+
+  PrivateIP:
+    Description: Private IP address
+    Value: !GetAtt Linux2023EC2Instance.PrivateIp
+  
+  SSMSessionCommand:
+    Description: Command to connect via SSM Session Manager
+    Value: !Sub 'aws ssm start-session --target ${Linux2023EC2Instance}'
+  

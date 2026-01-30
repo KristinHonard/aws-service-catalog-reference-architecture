@@ -1,0 +1,1400 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template will create a VPC with 2 Public Subnets, 2 Private Subnets and 2 NAT Gateway. Options to connect to Transit Gateway.
+Metadata:
+  AWS::CloudFormation::Interface:
+#=======================================================
+# Parameter Groups
+#=======================================================
+
+    ParameterGroups:
+      - Label:
+          default: VPC Configuration
+        Parameters:
+          - VPCCIDR
+      - Label:
+          default: Public Subnet Configuration
+        Parameters:
+          - PublicSubnet1CIDR
+          - PublicSubnet2CIDR
+      - Label:
+          default: Private Subnet Configuration
+        Parameters:
+          - PrivateSubnet1CIDR
+          - PrivateSubnet2CIDR
+      - Label:
+          default:  Resource naming
+        Parameters:
+          - ResourcePrefix
+      - Label:
+          default: Transit Gateway Configuration
+        Parameters:
+          - AttachToTGW
+          - AttachSubnet2ToTGW
+          - RoutingPolicy
+      - Label:
+          default: NACL Configuration
+        Parameters:
+          - VPCDNSIP
+          - PublicSubnetCIDRRange
+          - PrivateSubnetCIDRRange
+
+#=======================================================
+# Parameter Labels
+#=======================================================
+
+    ParameterLabels:
+      PrivateSubnet1CIDR:
+        default: Private subnet 1 CIDR
+      PrivateSubnet2CIDR:
+        default: Private subnet 2 CIDR      
+      PublicSubnet1CIDR:
+        default: Public subnet 1 CIDR
+      PublicSubnet2CIDR:
+        default: Public subnet 2 CIDR      
+      VPCCIDR:
+        default: VPC CIDR
+      ResourcePrefix:
+        default: Prefix assigned when naming resources
+      AttachToTGW:
+        default: Add TGAttachment to Private Subnet 1
+      AttachSubnet2ToTGW:
+        default: Add TGAttachment to Private Subnet 2
+      VPCDNSIP:
+        default: The IP of the DNS resolver in the VPC. Should be the .2 address of the VPC CIDR
+
+#=======================================================
+# Parameters
+#=======================================================
+
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Description: Prefix for the created resources (e.g. default-Public-Subnet1, default-Private-Subnet1, etc...).
+    Default: 'Default'
+
+  VPCCIDR:
+    Type: String
+    Description: CIDR block for the VPC.
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+
+  PublicSubnet1CIDR:    
+    Type: String
+    Description: CIDR block for the public DMZ subnet 1 located in Availability Zone "a".
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x    
+
+  PublicSubnet2CIDR:    
+    Type: String
+    Description: CIDR block for the public DMZ subnet 2 located in Availability Zone "b".
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x    
+
+  PrivateSubnet1CIDR:
+    Type: String
+    Description: CIDR block for the private subnet 1 located in Availability Zone "a".
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x    
+
+  PrivateSubnet2CIDR:
+    Type: String
+    Description: CIDR block for the private subnet 2 located in Availability Zone "b".
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x    
+
+  AttachToTGW:
+    Description: Set to TRUE to create/add attachment. Set to FALSE to remove attachment
+    Type: String
+    Default: False
+    AllowedValues:
+    - True
+    - False
+
+  AttachSubnet2ToTGW:
+    Description: Set to TRUE to create/add attachment. Set to FALSE to remove attachment.
+    Type: String
+    Default: False
+    AllowedValues:
+    - True
+    - False
+
+  VPCDNSIP:
+    Description: Only provide this IP if changing the routing policy to Standard-NoInternet
+    Type: String
+    Default: 10.1.3.2/32
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x  
+
+  PublicSubnetCIDRRange:
+    Description:  The CIDR Range of the Public Subnets.  Should be equal to the first half of IP's setup in the VPC.
+    Type: String
+    Default: 10.1.3.0/25
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x  
+
+  PrivateSubnetCIDRRange:
+    Description: The CIDR Range of the Private Subnets.  Should be equal to the second half of IP's setup in the VPC.
+    Type: String
+    Default: 10.1.3.128/25
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x  
+
+  RoutingPolicy:
+    Description: Adds the appropriate Associate-with and Propagate-to Tags based on Policy selected
+    Type: String
+    Default: None
+    AllowedValues:
+    - None
+    - RemoveAccess
+    - Standard
+    - InternetOnly
+    - Standard-NoInternet
+
+#=======================================================
+# Conditions
+#=======================================================
+
+Conditions:
+  NVirginiaRegionCondition: !Equals [!Ref 'AWS::Region', us-east-1]
+  TGAttachmentCondition: !Equals [!Ref AttachToTGW, True]
+  TGAttachmentSubnet2Condition: !Equals [!Ref AttachSubnet2ToTGW, True]
+  AssociateStandardAccessCondition: !Equals [!Ref RoutingPolicy, Standard]
+  AssociateInternetOnlyCondition: !Equals [!Ref RoutingPolicy, InternetOnly]
+  PropagateStandardAccessCondition: !Equals [!Ref RoutingPolicy, Standard]
+  PropagateInternetOnlyCondition: !Equals [!Ref RoutingPolicy, InternetOnly]
+  AssociateStandardNoInternetCondition: !Equals [!Ref RoutingPolicy, Standard-NoInternet]
+  PropagateStandardNoInternetCondition: !Equals [!Ref RoutingPolicy, Standard-NoInternet]
+  RemoveAssociationCondition: !Equals [!Ref RoutingPolicy, RemoveAccess]
+  RemovePropagationCondition: !Equals [!Ref RoutingPolicy, RemoveAccess]
+
+Resources:
+
+# =======================================================
+# Base VPC
+# =======================================================
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref 'VPCCIDR'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-VPC
+
+        # Adds tags for the Standard Policy 
+        - !If
+          - AssociateStandardAccessCondition
+          - Key: Associate-with
+            Value: Standard
+          - !Ref AWS::NoValue
+        - !If
+          - PropagateStandardAccessCondition
+          - Key: Propagate-to
+            Value: "DirectConnectGateway_RoutingDomain, OutboundVPC_RoutingDomain"
+          - !Ref AWS::NoValue          
+
+        # Adds tags for the InternetOnly Policy 
+        - !If
+          - AssociateInternetOnlyCondition
+          - Key: Associate-with
+            Value: InternetOnly
+          - !Ref AWS::NoValue
+        - !If
+          - PropagateInternetOnlyCondition
+          - Key: Propagate-to
+            Value: "OutboundVPC_RoutingDomain"
+          - !Ref AWS::NoValue
+
+        # Adds tags for the Standard-NoInternet Policy 
+        - !If
+          - AssociateStandardNoInternetCondition
+          - Key: Associate-with
+            Value: Standard-NoInternet
+          - !Ref AWS::NoValue
+        - !If
+          - PropagateStandardNoInternetCondition
+          - Key: Propagate-to
+            Value: "DirectConnectGateway_RoutingDomain,SharedServicesVPC_RoutingDomain"
+          - !Ref AWS::NoValue        
+
+        # Removes values from tags for the RemoveAccess Policy
+        - !If
+          - RemoveAssociationCondition
+          - Key: Associate-with
+            Value: BlackHole
+          - !Ref AWS::NoValue
+        - !If
+          - RemovePropagationCondition
+          - Key: Propagate-to
+            Value: BlackHole
+          - !Ref AWS::NoValue
+
+# =======================================================
+# DHCP Options
+# =======================================================
+
+  DHCPOptions:
+    Type: AWS::EC2::DHCPOptions
+    Properties:
+      DomainName: !If [NVirginiaRegionCondition, ec2.internal, !Join ['', [!Ref 'AWS::Region',
+            .compute.internal]]]
+      DomainNameServers:
+        - AmazonProvidedDNS
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-DHCPOptionsSet
+
+  VPCDHCPOptionsAssociation:
+    Type: AWS::EC2::VPCDHCPOptionsAssociation
+    Properties:
+      VpcId: !Ref 'VPC'
+      DhcpOptionsId: !Ref 'DHCPOptions'
+
+# =======================================================
+# Internet Gateway
+# =======================================================
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-InternetGateway
+        - Key: Network
+          Value: Public
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref 'VPC'
+      InternetGatewayId: !Ref 'InternetGateway'
+
+# =======================================================
+# Private Subnets
+# =======================================================
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !Ref 'PrivateSubnet1CIDR'
+      AvailabilityZone: !Sub ${AWS::Region}a
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet1
+        - !If
+          - TGAttachmentCondition
+          - Key: Attach-to-tgw
+            Value: ""
+          - !Ref AWS::NoValue
+
+  PrivateSubnet2:    
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !Ref 'PrivateSubnet2CIDR'
+      AvailabilityZone: !Sub ${AWS::Region}b
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet2
+        - !If
+          - TGAttachmentSubnet2Condition
+          - Key: Attach-to-tgw
+            Value: ""
+          - !Ref AWS::NoValue
+
+# =======================================================
+# Private routes and route tables
+# =======================================================
+
+  PrivateSubnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet1RouteTable
+
+  PrivateSubnet1NATRoute:  
+    Type: AWS::EC2::Route    
+    Properties:
+      RouteTableId: !Ref 'PrivateSubnet1RouteTable'
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref 'NATGateway1'
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PrivateSubnet1'
+      RouteTableId: !Ref 'PrivateSubnet1RouteTable'
+
+  PrivateSubnet2RouteTable:    
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet2RouteTable
+
+  PrivateSubnet2NATRoute:    
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref 'PrivateSubnet2RouteTable'
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref 'NATGateway1'
+
+  PrivateSubnet2RouteTableAssociation:    
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PrivateSubnet2'
+      RouteTableId: !Ref 'PrivateSubnet2RouteTable'
+
+# =======================================================
+# Public Subnets
+# =======================================================
+
+  PublicSubnet1:    
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !Ref 'PublicSubnet1CIDR'
+      AvailabilityZone: !Sub ${AWS::Region}a
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PublicSubnet1
+
+  PublicSubnet2:    
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !Ref 'PublicSubnet2CIDR'
+      AvailabilityZone: !Sub ${AWS::Region}b
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PublicSubnet2
+
+# =======================================================
+# Public routes and route tables
+# =======================================================
+
+  PublicSubnetRouteTable:    
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PublicSubnetsRouteTable
+
+  PublicSubnetRoute:    
+    DependsOn: VPCGatewayAttachment
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref 'PublicSubnetRouteTable'
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref 'InternetGateway'
+
+  PublicSubnet1RouteTableAssociation:    
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PublicSubnet1'
+      RouteTableId: !Ref 'PublicSubnetRouteTable'
+
+  PublicSubnet2RouteTableAssociation:    
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'PublicSubnet2'
+      RouteTableId: !Ref 'PublicSubnetRouteTable'
+
+# =======================================================
+# NAT Gateway
+# =======================================================
+
+  NAT1EIP:    
+    DependsOn: VPCGatewayAttachment
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+    
+  NATGateway1:    
+    DependsOn: VPCGatewayAttachment
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt 'NAT1EIP.AllocationId'
+      SubnetId: !Ref 'PublicSubnet1'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-NATGateway1
+
+#=======================================================
+# Flow Logs
+#=======================================================
+
+  VPCFlowLogsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/Mathematica/${AWS::StackName}/${ResourcePrefix}-VPC/flowlogs'
+      RetentionInDays: 60
+
+  VPCFlowLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub MathRole-${ResourcePrefix}-VPCFlowLogsRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - vpc-flow-logs.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: MathPolicy-CreateLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogGroups
+              - logs:DescribeLogStreams
+              Effect: Allow
+              Resource: !Sub "arn:aws:logs:${AWS::Region}:*:log-group:/Mathematica/${AWS::StackName}/${ResourcePrefix}-VPC/flowlogs:*"
+
+  VPCFlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+        DeliverLogsPermissionArn: !GetAtt 'VPCFlowLogsRole.Arn'
+        LogGroupName: !Sub '/Mathematica/${AWS::StackName}/${ResourcePrefix}-VPC/flowlogs'
+        ResourceId: !Ref 'VPC'
+        ResourceType: VPC
+        TrafficType: ALL
+
+# =======================================================
+# Endpoints
+# =======================================================
+
+#=======================================================
+# Gateway Endpoints
+#=======================================================
+
+  EndpointS3:
+    Type: AWS::EC2::VPCEndpoint    
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Gateway
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      RouteTableIds:
+        - !Ref 'PublicSubnetRouteTable'
+        - !Ref 'PrivateSubnet1RouteTable'
+        - !Ref 'PrivateSubnet2RouteTable'
+
+#=======================================================
+# Interface Endpoints
+#=======================================================
+
+  EndpointKMS:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.kms
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      SubnetIds: 
+        - !Ref 'PrivateSubnet1'
+        - !Ref 'PrivateSubnet2'
+
+  EndpointCloudwatchLogs:
+    Type: AWS::EC2::VPCEndpoint    
+    Properties:
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+      SubnetIds:
+        - !Ref 'PrivateSubnet1'
+        - !Ref 'PrivateSubnet2'
+
+#=======================================================
+# Security Group for Interface endpoints
+#=======================================================
+
+  EndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for VPC Endpoints
+      GroupName: !Sub ${ResourcePrefix}-VPCEndpoints-SG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref VPCCIDR
+      VpcId: !Ref VPC
+      Tags: 
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-VPCEndpoints-SG
+
+#=======================================================
+# Security Groups
+#=======================================================
+
+  # ExternalRDPSecurityGroup:
+  #   Condition: ExternalSGCondition
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties: 
+  #     GroupDescription: Provides RDP access from External Mathematica IPs
+  #     GroupName: !Sub ${ResourcePrefix}-RDP-Access-Mathematica-External-SG
+  #     SecurityGroupEgress: 
+  #       - IpProtocol: "-1"
+  #         CidrIp: 0.0.0.0/0
+  #         Description: Allows all outbound traffic
+  #     SecurityGroupIngress: 
+  #       - IpProtocol: tcp
+  #         FromPort: 3389
+  #         ToPort: 3389
+  #         CidrIp: 74.123.120.0/21
+  #         Description: Access from NJ/DC/VPN
+  #       - IpProtocol: tcp
+  #         FromPort: 3389
+  #         ToPort: 3389
+  #         CidrIp: 50.78.29.53/32
+  #         Description: Access from Cambridge
+  #       - IpProtocol: tcp
+  #         FromPort: 3389
+  #         ToPort: 3389
+  #         CidrIp: 96.74.73.85/32
+  #         Description: Access from Oakland
+  #       - IpProtocol: tcp
+  #         FromPort: 3389
+  #         ToPort: 3389
+  #         CidrIp: 96.74.4.17/32
+  #         Description: Access from Seattle
+  #       - IpProtocol: tcp
+  #         FromPort: 3389
+  #         ToPort: 3389
+  #         CidrIp: 50.77.130.65/32
+  #         Description: Access from Chicago
+  #       - IpProtocol: tcp
+  #         FromPort: 3389
+  #         ToPort: 3389
+  #         CidrIp: 96.86.41.33/32
+  #         Description: Access from Woodlawn
+  #       - IpProtocol: tcp
+  #         FromPort: 3389
+  #         ToPort: 3389
+  #         CidrIp: 96.85.96.121/32
+  #         Description: Access from Ann Arbor        
+  #     Tags: 
+  #       - Key: Name
+  #         Value: !Sub ${ResourcePrefix}-RDP-Access-Mathematica-External-SG
+  #     VpcId: !Ref VPC
+
+  # ExternalSSHSecurityGroup:
+  #   Condition: ExternalSGCondition
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties: 
+  #     GroupDescription: Provides SSH access from External Mathematica IPs
+  #     GroupName: !Sub ${ResourcePrefix}-SSH-Access-Mathematica-External-SG
+  #     SecurityGroupEgress: 
+  #       - IpProtocol: "-1"
+  #         CidrIp: 0.0.0.0/0
+  #         Description: Allows all outbound traffic
+  #     SecurityGroupIngress: 
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: 74.123.120.0/21
+  #         Description: Access from DC/NJ/VPN
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: 50.78.29.53/32
+  #         Description: Access from Cambridge
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: 96.74.73.85/32
+  #         Description: Access from Oakland
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: 96.74.4.17/32
+  #         Description: Access from Seattle
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: 96.86.41.33/32
+  #         Description: Access from Woodlawn
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: 96.85.96.121/32
+  #         Description: Access from Ann Arbor
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: 50.77.130.65/32
+  #         Description: Access from Chicago        
+  #     Tags: 
+  #       - Key: Name
+  #         Value: !Sub ${ResourcePrefix}-SSH-Access-Mathematica-External-SG
+  #     VpcId: !Ref VPC
+
+  InternalRDPSecurityGroup:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Provides RDP access from Internal Mathematica IPs
+      GroupName: !Sub ${ResourcePrefix}-RDP-Access-Mathematica-Internal-SG
+      SecurityGroupEgress: 
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+          Description: Allows all outbound traffic
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 10.0.0.0/13
+          Description: Access from Mathematica Internal NJ1, DC1, NJ2, MI1, MA1, CA1, IL1, AZ1
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 10.8.0.0/15
+          Description: Access from Mathematica Internal MD1, NJ3
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 10.10.0.0/16
+          Description: Access from Mathematica Internal WA1
+      Tags: 
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-RDP-Access-Mathematica-Internal-SG
+      VpcId: !Ref VPC
+
+  InternalSSHSecurityGroup:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Provides SSH access from Internal Mathematica IPs
+      GroupName: !Sub ${ResourcePrefix}-SSH-Access-Mathematica-Internal-SG
+      SecurityGroupEgress: 
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+          Description: Allows all outbound traffic
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.0.0.0/13
+          Description: Access from Mathematica Internal NJ1, DC1, NJ2, MI1, MA1, CA1, IL1, AZ1
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.8.0.0/15
+          Description: Access from Mathematica Internal MD1, NJ3
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.10.0.0/16
+          Description: Access from Mathematica Internal WA1
+      Tags: 
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-SSH-Access-Mathematica-Internal-SG
+      VpcId: !Ref VPC
+
+#=======================================================
+# NACLS
+#=======================================================
+
+  # Creates the NACL for the PublicSubnets
+  PublicSubnetNACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PublicSubnet-NACL
+      VpcId: !Ref VPC
+
+  # Creates the NACL for PrivateSubnet1
+  PrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet1-NACL
+      VpcId: !Ref VPC
+
+  # Creates the NACL for PrivateSubnet2
+  PrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-PrivateSubnet2-NACL
+      VpcId: !Ref VPC
+
+# #=======================================================
+# # Public Subnet NACL Rules
+# #=======================================================
+
+# # Adds Inbound Rule 100 for VPC DNS to the PrivateSubnet1 NACL
+#   AddInboundRule100ToPrivateSubnet1NACL:
+#     Condition: AssociateStandardNoInternetCondition
+#     Type: AWS::EC2::NetworkAclEntry
+#     Properties:
+#       RuleNumber: 100
+#       CidrBlock: !Ref VPCDNSIP
+#       NetworkAclId: !Ref PublicSubnetNACL
+#       Protocol: -1
+#       RuleAction: allow
+#     DependsOn: PublicSubnetNACL
+
+# # Adds Outbound Rule 100 for VPC DNS to the PrivateSubnet1 NACL
+#   AddOutboundRule100ToPrivateSubnet1NACL:
+#     Condition: AssociateStandardNoInternetCondition
+#     Type: AWS::EC2::NetworkAclEntry
+#     Properties:
+#       RuleNumber: 100
+#       CidrBlock: !Ref VPCDNSIP
+#       NetworkAclId: !Ref PublicSubnetNACL
+#       Protocol: -1
+#       Egress: True
+#       RuleAction: allow
+#     DependsOn: PublicSubnetNACL
+
+  AddInboundRule110ToPublicSubnetNACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 110
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref PublicSubnetNACL
+      Protocol: 6
+      PortRange:
+        From: 80
+        To: 80
+      RuleAction: allow
+    DependsOn: PublicSubnetNACL
+
+  AddOutboundRule110ToPublicSubnetNACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 110
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref PublicSubnetNACL
+      Protocol: 6
+      PortRange:
+        From: 80
+        To: 80
+      Egress: True
+      RuleAction: allow
+    DependsOn: PublicSubnetNACL
+
+  AddInboundRule120ToPublicSubnetNACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 120
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref PublicSubnetNACL
+      Protocol: 6
+      PortRange:
+        From: 443
+        To: 443
+      RuleAction: allow
+    DependsOn: PublicSubnetNACL
+
+  AddOutboundRule120ToPublicSubnetNACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 120
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref PublicSubnetNACL
+      Protocol: 6
+      PortRange:
+        From: 443
+        To: 443
+      Egress: True
+      RuleAction: allow
+    DependsOn: PublicSubnetNACL
+
+  AddInboundRule130ToPublicSubnetNACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 130
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref PublicSubnetNACL
+      Protocol: 6
+      PortRange:
+        From: 1024
+        To: 65535
+      RuleAction: allow
+    DependsOn: PublicSubnetNACL
+
+  AddOutboundRule130ToPublicSubnetNACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 130
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref PublicSubnetNACL
+      Protocol: 6
+      PortRange:
+        From: 1024
+        To: 65535
+      Egress: True
+      RuleAction: allow
+    DependsOn: PublicSubnetNACL
+
+#=======================================================
+# Private Subnet Inbound NACL Rules
+#=======================================================
+
+# Adds Inbound Rule 100 for VPC DNS to the PrivateSubnet1 NACL
+  AddInboundRule100ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 100
+      CidrBlock: !Ref VPCDNSIP
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 100 for VPC DNS to the PrivateSubnet2 NACL
+  AddInboundRule100ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 100
+      CidrBlock: !Ref VPCDNSIP
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 110 for Public Subnet traffic on port 80 to the PrivateSubnet1 NACL
+  AddInboundRule110ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 110
+      CidrBlock: !Ref PublicSubnetCIDRRange
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: 6
+      PortRange:
+        From: 80
+        To: 80
+      RuleAction: allow
+
+# Adds Inbound Rule 110 for Public Subnet traffic on port 80 to the PrivateSubnet2 NACL
+  AddInboundRule110ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 110
+      CidrBlock: !Ref PublicSubnetCIDRRange
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: 6
+      PortRange:
+        From: 80
+        To: 80
+      RuleAction: allow
+
+# Adds Inbound Rule 120 for Public Subnet traffic on port 443 to the PrivateSubnet1 NACL
+  AddInboundRule120ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 120
+      CidrBlock: !Ref PublicSubnetCIDRRange
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: 6
+      PortRange:
+        From: 443
+        To: 443
+      RuleAction: allow
+
+# Adds Inbound Rule 120 for Public Subnet traffic on port 443 to the PrivateSubnet2 NACL
+  AddInboundRule120ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 120
+      CidrBlock: !Ref PublicSubnetCIDRRange
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: 6
+      PortRange:
+        From: 443
+        To: 443
+      RuleAction: allow
+
+# Adds Inbound Rule 130 to allow all private subnet traffic to the PrivateSubnet1 NACL
+  AddInboundRule130ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 130
+      CidrBlock: !Ref PrivateSubnetCIDRRange
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 130 to allow all private subnet traffic to the PrivateSubnet2 NACL
+  AddInboundRule130ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 130
+      CidrBlock: !Ref PrivateSubnetCIDRRange
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 140 to allow all 10.0.0.0/13 traffic to the PrivateSubnet1 NACL
+  AddInboundRule140ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 140
+      CidrBlock: 10.0.0.0/13
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 140 to allow all 10.0.0.0/13 traffic to the PrivateSubnet2 NACL
+  AddInboundRule140ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 140
+      CidrBlock: 10.0.0.0/13
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 150 to allow all 10.8.0.0/15 traffic to the PrivateSubnet1 NACL
+  AddInboundRule150ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 150
+      CidrBlock: 10.8.0.0/15
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 150 to allow all 10.8.0.0/15 traffic to the PrivateSubnet2 NACL
+  AddInboundRule150ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 150
+      CidrBlock: 10.8.0.0/15
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 160 to allow all 10.10.0.0/16 traffic to the PrivateSubnet1 NACL
+  AddInboundRule160ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 160
+      CidrBlock: 10.10.0.0/16
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 160 to allow all 10.10.0.0/16 traffic to the PrivateSubnet2 NACL
+  AddInboundRule160ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 160
+      CidrBlock: 10.10.0.0/16
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 170 to allow all 10.71.0.0/24 traffic to the PrivateSubnet1 NACL
+  AddInboundRule170ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 170
+      CidrBlock: 10.71.0.0/24
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 170 to allow all 10.71.0.0/24 traffic to the PrivateSubnet2 NACL
+  AddInboundRule170ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 170
+      CidrBlock: 10.71.0.0/24
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Inbound Rule 180 for ephemeral ports to the PrivateSubnet1 NACL
+  AddInboundRule180ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 180
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: 6
+      PortRange:
+        From: 1024
+        To: 65535
+      RuleAction: allow
+
+# Adds Inbound Rule 180 for ephemeral ports to the PrivateSubnet2 NACL
+  AddInboundRule180ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 180
+      CidrBlock: 0.0.0.0/0
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: 6
+      PortRange:
+        From: 1024
+        To: 65535
+      RuleAction: allow
+
+#=======================================================
+# Private Subnet Outbound NACL Rules
+#=======================================================
+
+# Adds Outbound Rule 100 for VPC DNS to the PrivateSubnet1 NACL
+  AddOutboundRule100ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 100
+      CidrBlock: !Ref VPCDNSIP
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 100 for VPC DNS to the PrivateSubnet2 NACL
+  AddOutboundRule100ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 100
+      CidrBlock: !Ref VPCDNSIP
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 110 for port 80 to the PrivateSubnet1 NACL
+  AddOutboundRule110ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 110
+      CidrBlock: 0.0.0.0/0
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: 6
+      PortRange:
+        From: 80
+        To: 80
+      RuleAction: allow
+
+# Adds Outbound Rule 110 for port 80 to the PrivateSubnet2 NACL
+  AddOutboundRule110ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 110
+      CidrBlock: 0.0.0.0/0
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: 6
+      PortRange:
+        From: 80
+        To: 80
+      RuleAction: allow
+
+# Adds Outbound Rule 120 for port 443 to the PrivateSubnet1 NACL
+  AddOutboundRule120ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 120
+      CidrBlock: 0.0.0.0/0
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: 6
+      PortRange:
+        From: 443
+        To: 443
+      RuleAction: allow
+
+# Adds Outbound Rule 120 for port 443 to the PrivateSubnet2 NACL
+  AddOutboundRule120ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 120
+      CidrBlock: 0.0.0.0/0
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: 6
+      PortRange:
+        From: 443
+        To: 443
+      RuleAction: allow
+
+# Adds Outbound Rule 130 to allow all private subnet traffic to the PrivateSubnet1 NACL
+  AddOutboundRule130ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 130
+      CidrBlock: !Ref PrivateSubnetCIDRRange
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 130 to allow all private subnet traffic PrivateSubnet2 NACL
+  AddOutboundRule130ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 130
+      CidrBlock: !Ref PrivateSubnetCIDRRange
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 140 to allow all 10.0.0.0/13 traffic to the PrivateSubnet1 NACL
+  AddOutboundRule140ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 140
+      CidrBlock: 10.0.0.0/13
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 140 to allow all 10.0.0.0/13 traffic to the PrivateSubnet2 NACL
+  AddOutboundRule140ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 140
+      CidrBlock: 10.0.0.0/13
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 150 to allow all 10.8.0.0/15 traffic to the PrivateSubnet1 NACL
+  AddOutboundRule150ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 150
+      CidrBlock: 10.8.0.0/15
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 150 to allow all 10.8.0.0/15 traffic to the PrivateSubnet2 NACL
+  AddOutboundRule150ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 150
+      CidrBlock: 10.8.0.0/15
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 160 to allow all 10.10.0.0/16 traffic to the PrivateSubnet1 NACL
+  AddOutboundRule160ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 160
+      CidrBlock: 10.10.0.0/16
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 160 to allow all 10.10.0.0/16 traffic to the PrivateSubnet2 NACL
+  AddOutboundRule160ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 160
+      CidrBlock: 10.10.0.0/16
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 170 to allow all SharedServices traffic to the PrivateSubnet1 NACL
+  AddOutboundRule170ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 170
+      CidrBlock: 10.71.0.0/24
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 170 to allow all SharedServices traffic to the PrivateSubnet2 NACL
+  AddOutboundRule170ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 170
+      CidrBlock: 10.71.0.0/24
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: -1
+      RuleAction: allow
+
+# Adds Outbound Rule 180 to allow ephemeral port traffic to the PrivateSubnet1 NACL
+  AddOutboundRule180ToPrivateSubnet1NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 180
+      CidrBlock: !Ref PublicSubnetCIDRRange
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      Protocol: 6
+      PortRange:
+        From: 1024
+        To: 65535
+      RuleAction: allow
+
+# Adds Outbound Rule 180 to allow ephemeral port traffic to the PrivateSubnet2 NACL
+  AddOutboundRule180ToPrivateSubnet2NACL:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      RuleNumber: 180
+      CidrBlock: !Ref PublicSubnetCIDRRange
+      Egress: True
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      Protocol: 6
+      PortRange:
+        From: 1024
+        To: 65535
+      RuleAction: allow
+
+#=======================================================
+# Attach the NACLs to the subnets
+#=======================================================
+
+## Attaches the NACL to PublicSubnet1
+  AttachNACLToPublicSubnet1:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref PublicSubnetNACL
+      SubnetId: !Ref PublicSubnet1
+
+## Attaches the NACL to PublicSubnet2
+  AttachNACLToPublicSubnet2:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref PublicSubnetNACL
+      SubnetId: !Ref PublicSubnet2
+
+## Attaches the NACL to PrivateSubnet1
+  AttachNACLToPrivateSubnet1:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref PrivateSubnet1NACL
+      SubnetId: !Ref PrivateSubnet1
+
+## Attaches the NACL to PrivateSubnet2
+  AttachNACLToPrivateSubnet2:
+    Condition: AssociateStandardNoInternetCondition
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref PrivateSubnet2NACL
+      SubnetId: !Ref PrivateSubnet2
+
+Outputs:
+
+ VPCID:
+   Description: The ID of the VPC
+   Value: !Ref VPC
+   Export:
+     Name: !Sub '${AWS::StackName}-VPCID'
+ PrivateSubnet1ID:
+   Description: The ID of Private Subnet 1
+   Value: !Ref PrivateSubnet1
+   Export:
+     Name: !Sub '${AWS::StackName}-PrivateSubnet1ID'
+ PrivateSubnet2ID:
+   Description: The ID of Private Subnet 2
+   Value: !Ref PrivateSubnet2
+   Export:
+     Name: !Sub '${AWS::StackName}-PrivateSubnet2ID'        
+ PublicSubnet1ID:
+   Description: The ID of Public Subnet 1
+   Value: !Ref PublicSubnet1
+   Export:
+     Name: !Sub '${AWS::StackName}-PublicSubnet1ID'
+ PublicSubnet2ID:
+   Description: The ID of Public Subnet 2
+   Value: !Ref PublicSubnet2
+   Export:
+     Name: !Sub '${AWS::StackName}-PublicSubnet2ID' 

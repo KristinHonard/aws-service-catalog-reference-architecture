@@ -1,12 +1,9 @@
-Description: "ServiceCatalog 1BU Templates Launch Role. (fdp-1p5s1035k)"
+Description: "ServiceCatalog Serverless Launch Role. (fdp-1p5s1035k)"
 Resources:
-  SC1BUServerlessLaunchRole:
+  SCServerlessLaunchRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: SC1BULaunchRole 
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
-        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+      RoleName: SCServerlessLaunchRole 
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -124,7 +121,7 @@ Resources:
                 Effect: "Allow"        
 Outputs:
     LaunchRoleArn:
-        Value: !GetAtt SC1BUServerlessLaunchRole.Arn
+        Value: !GetAtt SCServerlessLaunchRole.Arn
     LaunchRoleName:
-        Value: !Ref SC1BUServerlessLaunchRole
+        Value: !Ref SCServerlessLaunchRole
         

@@ -17,6 +17,7 @@ Metadata:
           - LaunchRoleName
           - LinkedRole1
           - LinkedRole2
+          - LinkedRole3
       - Label:
           default: Product Settings
         Parameters:
@@ -74,6 +75,10 @@ Conditions:
     - !Equals 
       - !Ref LinkedRole2
       - ''
+  CondLinkRole3: !Not 
+    - !Equals 
+      - !Ref LinkedRole3
+      - ''
 
 Resources:
   SCEC2portfolio:
@@ -98,7 +103,15 @@ Resources:
       PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole2}'
       PortfolioId: !Ref SCEC2portfolio
       PrincipalType: IAM
- 
+
+  addrole3:
+    Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
+    Condition: CondLinkRole3
+    Properties:
+      PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole3}'
+      PortfolioId: !Ref SCEC2portfolio
+      PrincipalType: IAM 
+
   LaunchConstraintRole:
     Type: AWS::CloudFormation::Stack
     Condition: CreateLaunchConstraint

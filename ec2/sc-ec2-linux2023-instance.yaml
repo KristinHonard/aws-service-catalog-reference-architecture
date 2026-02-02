@@ -142,6 +142,7 @@ Resources:
           Value: cloudwatch
         - Key: its:products:resourceType
           Value: logGroup
+
   Linux2023CPUAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -162,6 +163,7 @@ Resources:
           Value: cloudwatch
         - Key: its:products:resourceType
           Value: alarm
+
   Linux2023StatusCheckAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -182,6 +184,7 @@ Resources:
           Value: cloudwatch
         - Key: its:products:resourceType
           Value: alarm
+
 Outputs:
   InstanceId:
     Description: EC2 Instance ID

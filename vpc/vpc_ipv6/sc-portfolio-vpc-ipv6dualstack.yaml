@@ -51,12 +51,12 @@ Parameters:
   LinkedRole2:
     Type: String
     Description: (Optional) The name of a second role which can execute products in this portfolio.
-    Default: 'AWSServiceCatalogEndUserAccess'
+    Default: 'AWSReservedSSO_Network_Administrator_*'
 
   LinkedRole3:
     Type: String
     Description: (Optional) The name of a third role which can execute products in this portfolio.
-    Default: 'AdministratorAccess'
+    Default: 'AWSReservedSSO_AWSAdministratorAccess_*'
 
   RepoRootURL:
     Type: String

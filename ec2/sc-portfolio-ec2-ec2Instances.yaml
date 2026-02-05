@@ -56,7 +56,7 @@ Parameters:
   LinkedRole3:
     Type: String
     Description: (Optional) The name of a third role which can execute products in this portfolio.
-    Default: 'AdministratorAccess'
+    Default: 'AWSReservedSSO_AdministratorAccess_*'
 
   RepoRootURL:
     Type: String

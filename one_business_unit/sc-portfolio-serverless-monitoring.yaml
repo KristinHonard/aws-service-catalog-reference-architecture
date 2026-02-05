@@ -34,7 +34,7 @@ Parameters:
     Default: Service Catalog Portfolio that contains reference architecture products for 1BU demo.
   LaunchRoleName:
     Type: String
-    Description: (Optional) Name of the launch constraint role for 1BU products. leave this blank to create the role.
+    Description: (Optional) Name of the launch constraint role for 1BU products. Leave this blank to create the role.
   LinkedRole1:
     Type: String
     Description: (Optional) The name of a role which can execute products in this portfolio.
@@ -43,7 +43,7 @@ Parameters:
     Description: (Optional) The name of a second role which can execute products in this portfolio.
   RepoRootURL:
     Type: String
-    Description: S3 root url for the repository containing the product templates.
+    Description: S3 root URL for the repository containing the product templates.
     Default: https://s3.amazonaws.com/service-catalog-testing-314628052097/
 Conditions:
   CreateLaunchConstraint: !Equals 

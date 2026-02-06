@@ -46,22 +46,22 @@ Parameters:
   LinkedRole1:
     Type: String
     Description: (Optional) The name of a role which can execute products in this portfolio.
-    Default: 'AWSServiceCatalogAdminFullAccess'
+    Default: 'AWSReservedSSO_Project_Administrator'
 
   LinkedRole2:
     Type: String
     Description: (Optional) The name of a second role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_Network_Administrator_*'
+    Default: 'AWSReservedSSO_Network_Administrator'
 
   LinkedRole3:
     Type: String
     Description: (Optional) The name of a third role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_AWSAdministratorAccess_*'
+    Default: 'AWSReservedSSO_AWSAdministratorAccess'
 
   RepoRootURL:
     Type: String
     Description: Root URL for the repo containing the product templates.
-    Default: https://s3.amazonaws.com/aws-service-catalog-reference-architectures-314628052097/
+    Default: https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/
 
 Conditions:
   CreateLaunchConstraint: !Equals 
@@ -116,7 +116,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateLaunchConstraint
     Properties:
-      TemplateURL: !Sub '${RepoRootURL}iam/sc-vpc-launchrole.yml'
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-vpc-launchrole.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV42privateproduct:

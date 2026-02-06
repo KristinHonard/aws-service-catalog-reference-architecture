@@ -27,8 +27,6 @@ Parameters:
       - t3.large
     Description: EC2 instance type
 
-  Linux2023VPC:
-
   Linux2023Subnet:
     Type: AWS::EC2::Subnet::Id
     Description: Select subnet for Linux Instance
@@ -104,7 +102,7 @@ Resources:
         HttpPutResponseHopLimit: 1
         HttpEndpoint: enabled
       UserData:
-        Fn::Base64:
+        Fn::Base64: !Sub |
           #!/bin/bash
           set -e
           # Update system

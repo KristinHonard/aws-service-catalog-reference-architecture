@@ -102,7 +102,7 @@ Resources:
         HttpPutResponseHopLimit: 1
         HttpEndpoint: enabled
       UserData:
-        Fn::Base64:
+        Fn::Base64: !Sub |
           <powershell>
           # Set strict error handling
           $ErrorActionPreference = "Stop"

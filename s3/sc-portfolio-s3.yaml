@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
+
 Description: S3 Portfolio for Service Catalog. (fdp-1p5rtpgl6)
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -15,48 +17,71 @@ Metadata:
           - LaunchRoleName
           - LinkedRole1
           - LinkedRole2
+          - LinkedRole3
       - Label:
           default: Product Settings
         Parameters:
           - RepoRootURL
+
 Parameters:
   PortfolioProvider:
     Type: String
     Description: Provider Name
     Default: IT Services
+
   PortfolioName:
     Type: String
     Description: Portfolio Name
     Default: Service Catalog S3 Reference Architecture
+
   PortfolioDescription:
     Type: String
     Description: Portfolio Description
     Default: Service Catalog Portfolio that contains reference architecture products for Amazon Simple Storage Service.
+
   LaunchRoleName:
     Type: String
     Description: Name of the launch constraint role for VPC products. leave this blank to create the role.
+
   LinkedRole1:
     Type: String
     Description: (Optional) The name of a role which can execute products in this portfolio.
+    Default: 'AWSReservedSSO_Project_Administrator'
+
   LinkedRole2:
     Type: String
     Description: (Optional) The name of a second role which can execute products in this portfolio.
+    Default: 'AWSReservedSSO_Project_Developer'
+
+  LinkedRole3:
+    Type: String
+    Description: (Optional) The name of a third role which can execute products in this portfolio.
+    Default: 'AWSReservedSSO_AdministratorAccess'
+
   RepoRootURL:
     Type: String
-    Description: Root url for the repo containing the product templates.
-    Default: https://s3.amazonaws.com/aws-service-catalog-reference-architectures/
+    Description: Root URL for the repo containing the product templates.
+    Default: https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com//
+
 Conditions:
   CreateLaunchConstraint: !Equals 
     - !Ref LaunchRoleName
     - ''
+
   CondLinkRole1: !Not 
     - !Equals 
       - !Ref LinkedRole1
       - ''
+
   CondLinkRole2: !Not 
     - !Equals 
       - !Ref LinkedRole2
       - ''
+  CondLinkRole3: !Not 
+    - !Equals 
+      - !Ref LinkedRole3
+      - ''
+
 Resources:
   SCS3portfolio:
     Type: AWS::ServiceCatalog::Portfolio
@@ -64,6 +89,7 @@ Resources:
       ProviderName: !Ref PortfolioProvider
       Description: !Ref PortfolioDescription
       DisplayName: !Ref PortfolioName
+
   addrole1:
     Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
     Condition: CondLinkRole1
@@ -71,6 +97,7 @@ Resources:
       PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole1}'
       PortfolioId: !Ref SCS3portfolio
       PrincipalType: IAM
+
   addrole2:
     Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
     Condition: CondLinkRole2
@@ -78,12 +105,22 @@ Resources:
       PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole2}'
       PortfolioId: !Ref SCS3portfolio
       PrincipalType: IAM
+
+  addrole3:
+    Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
+    Condition: CondLinkRole3
+    Properties:
+      PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole3}'
+      PortfolioId: !Ref SCS3portfolio
+      PrincipalType: IAM 
+
   LaunchConstraintRole:
     Type: AWS::CloudFormation::Stack
     Condition: CreateLaunchConstraint
     Properties:
-      TemplateURL: !Sub '${RepoRootURL}iam/sc-s3-launchrole.yml'
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-s3-launchrole.yaml'
       TimeoutInMinutes: 5
+
   s3publicproduct:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -95,8 +132,9 @@ Resources:
           - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LaunchRoleName}'
         PortfolioId: !Ref SCS3portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-public.json'
+      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-public.yaml'
       TimeoutInMinutes: 5
+
   s3privateproduct:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -108,8 +146,9 @@ Resources:
           - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LaunchRoleName}'
         PortfolioId: !Ref SCS3portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-private.json'
+      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-private.yaml'
       TimeoutInMinutes: 5
+
   s3privateEncproduct:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -121,8 +160,9 @@ Resources:
           - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LaunchRoleName}'
         PortfolioId: !Ref SCS3portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-private-enc.json'
+      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-private-enc.yaml'
       TimeoutInMinutes: 5
+
   s3privateMFAproduct:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -134,8 +174,9 @@ Resources:
           - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LaunchRoleName}'
         PortfolioId: !Ref SCS3portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-private-mfa.json'
+      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-private-mfa.yaml'
       TimeoutInMinutes: 5
+
   s3privatetransproduct:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -147,5 +188,5 @@ Resources:
           - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LaunchRoleName}'
         PortfolioId: !Ref SCS3portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-private-trans.json'
+      TemplateURL: !Sub '${RepoRootURL}s3/sc-product-s3-private-trans.yaml'
       TimeoutInMinutes: 5

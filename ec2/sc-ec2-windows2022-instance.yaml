@@ -34,7 +34,7 @@ Parameters:
 
   Windows2022LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: Windows2022AMI
+    Default: Win2022AMI
     Description: Latest Mathematica Windows 2022 AMI ID from SSM Parameter Store
 
 Metadata:
@@ -104,7 +104,7 @@ Resources:
         HttpPutResponseHopLimit: 1
         HttpEndpoint: enabled
       UserData:
-        Fn::Base64:
+        Fn::Base64: !Sub |
           <powershell>
           # Set strict error handling
           $ErrorActionPreference = "Stop"

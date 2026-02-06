@@ -27,41 +27,38 @@ Parameters:
   PortfolioProvider:
     Type: String
     Description: Provider Name
-    Default: ITS Cloud Support
+    Default: "ITS Cloud Support"
 
   PortfolioName:
     Type: String
     Description: Portfolio Name
-    Default: MCSS Service Catalog EC2 Reference Architecture
+    Default: "MCSS Service Catalog EC2 Reference Architecture"
 
   PortfolioDescription:
     Type: String
     Description: Portfolio Description
-    Default: MCSS Service Catalog Portfolio that contains reference architecture products for Amazon Elastic Compute Cloud (EC2).
+    Default: "MCSS Service Catalog Portfolio that contains reference architecture products for Amazon Elastic Compute Cloud (EC2)."
  
   LaunchRoleName:
     Type: String
-    Description: Name of the launch constraint role for EC2 products. Leave this blank to create the role.
+    Description: "Name of the launch constraint role for EC2 products. Leave this blank to create the role."
  
   LinkedRole1:
     Type: String
     Description: (Optional) The name of a role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_Project_Developer'
 
   LinkedRole2:
     Type: String
     Description: (Optional) The name of a second role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_Network_Administrator'
 
   LinkedRole3:
     Type: String
     Description: (Optional) The name of a third role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_AdministratorAccess'
 
   RepoRootURL:
     Type: String
     Description: Root URL for the repo containing the product templates.
-    Default: https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/
+    Default: "https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/"
 
 Conditions:
   CreateLaunchConstraint: !Equals 
@@ -132,7 +129,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCEC2portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}ec2/sc-ec2-linux2023-instance.yaml'
+      TemplateURL: !Sub '${RepoRootURL}ec2/sc-product-ec2-linux2023-instance.yaml'
       TimeoutInMinutes: 5
  
   ec2windows2016product:
@@ -148,7 +145,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCEC2portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}ec2/sc-ec2-windows2016-instance.yaml'
+      TemplateURL: !Sub '${RepoRootURL}ec2/sc-product-ec2-windows2016-instance.yaml'
       TimeoutInMinutes: 5
  
   ec2windows2019product:
@@ -164,7 +161,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCEC2portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}ec2/sc-ec2-windows2019-instance.yaml'
+      TemplateURL: !Sub '${RepoRootURL}ec2/sc-product-ec2-windows2019-instance.yaml'
       TimeoutInMinutes: 5
  
   ec2windows2022product:
@@ -180,7 +177,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCEC2portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}ec2/sc-ec2-windows2022-instance.yaml'
+      TemplateURL: !Sub '${RepoRootURL}ec2/sc-product-ec2-windows2022-instance.yaml'
       TimeoutInMinutes: 5
  
 Outputs:

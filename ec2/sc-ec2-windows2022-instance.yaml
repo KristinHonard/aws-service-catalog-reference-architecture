@@ -88,7 +88,7 @@ Resources:
       ImageId: !Ref Windows2022LatestAmiId
       InstanceType: !Ref Windows2022InstanceType
       IamInstanceProfile: !Ref Windows2022EC2InstanceProfile
-      SubnetId: !Ref Windows2022Subnet
+      # SubnetId: !Ref Windows2022Subnet
       Monitoring: true
       EbsOptimized: true
       BlockDeviceMappings:

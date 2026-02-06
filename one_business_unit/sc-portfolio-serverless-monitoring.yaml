@@ -26,17 +26,17 @@ Parameters:
   PortfolioProvider:
     Type: String
     Description: Provider Name
-    Default: ITS Cloud Support
+    Default: 'ITS Cloud Support'
 
   PortfolioName:
     Type: String
     Description: Portfolio Name
-    Default: Service Catalog 1BU Reference Architecture
+    Default: 'Service Catalog 1BU Reference Architecture'
 
   PortfolioDescription:
     Type: String
     Description: Portfolio Description
-    Default: Service Catalog Portfolio that contains reference architecture products for 1BU demo.
+    Default: 'Service Catalog Portfolio that contains reference architecture products for 1BU demo.'
 
   LaunchRoleName:
     Type: String
@@ -45,17 +45,15 @@ Parameters:
   LinkedRole1:
     Type: String
     Description: (Optional) The name of a role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_Project_Administrator'
 
   LinkedRole2:
     Type: String
     Description: (Optional) The name of a second role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_Project_Developer'
     
   RepoRootURL:
     Type: String
     Description: S3 root URL for the repository containing the product templates.
-    Default: https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/
+    Default: 'https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/'
 
 Conditions:
   CreateLaunchConstraint: !Equals 

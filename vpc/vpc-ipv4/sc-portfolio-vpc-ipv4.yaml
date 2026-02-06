@@ -27,17 +27,17 @@ Parameters:
   PortfolioProvider:
     Type: String
     Description: Provider Name
-    Default: ITS Cloud Support
+    Default: 'ITS Cloud Support'
 
   PortfolioName:
     Type: String
     Description: Portfolio Name
-    Default: MCSS Service Catalog VPC IPv4 Reference Architecture
+    Default: 'MCSS Service Catalog VPC IPv4 Reference Architecture'
 
   PortfolioDescription:
     Type: String
     Description: Portfolio Description
-    Default: MCSS Service Catalog Portfolio that contains reference architecture products for Amazon Virtual Private Cloud (VPC).
+    Default: 'MCSS Service Catalog Portfolio that contains reference architecture products for Amazon Virtual Private Cloud (VPC).'
  
   LaunchRoleName:
     Type: String
@@ -46,22 +46,19 @@ Parameters:
   LinkedRole1:
     Type: String
     Description: (Optional) The name of a role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_Project_Administrator'
 
   LinkedRole2:
     Type: String
     Description: (Optional) The name of a second role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_Network_Administrator'
 
   LinkedRole3:
     Type: String
     Description: (Optional) The name of a third role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_AWSAdministratorAccess'
 
   RepoRootURL:
     Type: String
     Description: Root URL for the repo containing the product templates.
-    Default: https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/
+    Default: 'https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/'
 
 Conditions:
   CreateLaunchConstraint: !Equals 

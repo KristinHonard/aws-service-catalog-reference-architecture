@@ -55,10 +55,15 @@ Parameters:
     Type: String
     Description: (Optional) The name of a third role which can execute products in this portfolio.
 
+  # RepoRootURL:
+  #   Type: String
+  #   Description: Root URL for the repo containing the product templates.
+  #   Default: "https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/"
+
   RepoRootURL:
     Type: String
     Description: Root URL for the repo containing the product templates.
-    Default: "https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/"
+    Default: "https://s3.amazonaws.com/service-catalog-reference-architecture-314628052097/"
 
 Conditions:
   CreateLaunchConstraint: !Equals 

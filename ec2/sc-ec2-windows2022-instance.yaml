@@ -76,11 +76,6 @@ Resources:
       InstanceProfileName: !Sub '${Windows2022InstanceName}-instance-profile'
       Roles:
         - !Ref Windows2022EC2InstanceRole
-      Tags:
-        - Key: its:products:serviceName
-          Value: iam
-        - Key: its:products:resourceType
-          Value: profile
 
   Windows2022EC2Instance:
     Type: AWS::EC2::Instance
@@ -88,7 +83,7 @@ Resources:
       ImageId: !Ref Windows2022LatestAmiId
       InstanceType: !Ref Windows2022InstanceType
       IamInstanceProfile: !Ref Windows2022EC2InstanceProfile
-      # SubnetId: !Ref Windows2022Subnet
+      SubnetId: !Ref Windows2022Subnet
       Monitoring: true
       EbsOptimized: true
       BlockDeviceMappings:
@@ -170,7 +165,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub '${Windows2022InstanceName}-high-cpu'
-      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2022InstanceName} (${Windows2022InstanceId}) CPU exceeds 80%'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2022InstanceName} (${Windows2022EC2Instance}) CPU exceeds 80%'
       MetricName: CPUUtilization
       Namespace: AWS/EC2
       Statistic: Average
@@ -191,7 +186,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub '${Windows2022InstanceName}-status-check-failed'
-      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2022InstanceName} (${Windows2022InstanceId}) instance status checks fail'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2022InstanceName} (${Windows2022EC2Instance}) instance status checks fail'
       MetricName: StatusCheckFailed
       Namespace: AWS/EC2
       Statistic: Maximum

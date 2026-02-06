@@ -69,17 +69,14 @@ Resources:
           Value: iam
         - Key: its:products:resourceType
           Value: role
+
   Linux2023EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       InstanceProfileName: !Sub '${Linux2023InstanceName}-instance-profile'
       Roles:
         - !Ref Linux2023EC2InstanceRole
-      Tags:
-        - Key: its:products:serviceName
-          Value: iam
-        - Key: its:products:resourceType
-          Value: profile
+
   Linux2023EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -145,7 +142,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub '${Linux2023InstanceName}-high-cpu'
-      AlarmDescription: !Sub 'CloudWatch alarm when ${Linux2023InstanceName} (${Linux2023InstanceId}) CPU exceeds 80%'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Linux2023InstanceName} (${Linux2023EC2Instance}) CPU exceeds 80%'
       MetricName: CPUUtilization
       Namespace: AWS/EC2
       Statistic: Average
@@ -166,7 +163,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub '${Linux2023InstanceName}-status-check-failed'
-      AlarmDescription: !Sub 'CloudWatch alarm when ${Linux2023InstanceName} (${Linux2023InstanceId}) instance status checks fail'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Linux2023InstanceName} (${Linux2023EC2Instance}) instance status checks fail'
       MetricName: StatusCheckFailed
       Namespace: AWS/EC2
       Statistic: Maximum

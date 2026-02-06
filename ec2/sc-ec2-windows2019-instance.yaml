@@ -69,17 +69,14 @@ Resources:
           Value: iam
         - Key: its:products:resourceType
           Value: role
+
   Windows2019EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       InstanceProfileName: !Sub '${Windows2019InstanceName}-instance-profile'
       Roles:
         - !Ref Windows2019EC2InstanceRole
-      Tags:
-        - Key: its:products:serviceName
-          Value: iam
-        - Key: its:products:resourceType
-          Value: profile
+
   Windows2019EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -167,7 +164,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub '${Windows2019InstanceName}-high-cpu'
-      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2019InstanceName} (${Windows2019InstanceId}) CPU exceeds 80%'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2019InstanceName} (${Windows2019EC2Instance}) CPU exceeds 80%'
       MetricName: CPUUtilization
       Namespace: AWS/EC2
       Statistic: Average
@@ -187,7 +184,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub '${Windows2019InstanceName}-status-check-failed'
-      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2019InstanceName} (${Windows2019InstanceId}) instance status checks fail'
+      AlarmDescription: !Sub 'CloudWatch alarm when ${Windows2019InstanceName} (${Windows2019EC2Instance}) instance status checks fail'
       MetricName: StatusCheckFailed
       Namespace: AWS/EC2
       Statistic: Maximum

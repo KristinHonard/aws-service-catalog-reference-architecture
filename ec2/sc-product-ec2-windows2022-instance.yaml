@@ -29,13 +29,11 @@ Resources:
       Distributor: !Ref PortfolioProvider
       SupportDescription: ITS Cloud Support
       SupportEmail: ITSCloudSupport@mathematica-mpr.com
-      AcceptLanguage: en
-      SupportUrl: https://mathematica.service-now.com/mpr?id=emp_taxonomy_topic&topic_id=89bd521087401e10c05ab9d6cebb35f2
       ProductType: CLOUD_FORMATION_TEMPLATE
       ProvisioningArtifactParameters:
-        - Description: Windows 2022 EC2 instance 
+        - Description: Windows 2022 EC2 instance with monitoring and security hardening
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}ec2/sc-ec2-windows2022-instance.yaml'
+            LoadTemplateFromURL: !Sub "${RepoRootURL}ec2/sc-ec2-windows2022-instance.yaml"
           Name: Windows 2022 v1.0
 
   AssociateWindows2022Product:

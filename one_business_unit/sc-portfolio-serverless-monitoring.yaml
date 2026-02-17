@@ -26,34 +26,43 @@ Parameters:
   PortfolioProvider:
     Type: String
     Description: Provider Name
-    Default: 'ITS Cloud Support'
+    Default: "ITS Cloud Support"
 
   PortfolioName:
     Type: String
     Description: Portfolio Name
-    Default: 'Service Catalog 1BU Reference Architecture'
+    Default: "MCSS Service Catalog 1BU Reference Architecture"
 
   PortfolioDescription:
     Type: String
     Description: Portfolio Description
-    Default: 'Service Catalog Portfolio that contains reference architecture products for 1BU demo.'
+    Default: "MCSS Service Catalog Portfolio that contains reference architecture products for 1BU demo."
 
   LaunchRoleName:
     Type: String
-    Description: (Optional) Name of the launch constraint role for 1BU products. Leave this blank to create the role.
+    Description: "(Optional) Name of the launch constraint role for 1BU products. Leave this blank to create the role."
 
   LinkedRole1:
     Type: String
-    Description: (Optional) The name of a role which can execute products in this portfolio.
+    Description: "(Optional) The name of a role which can execute products in this portfolio."
 
   LinkedRole2:
     Type: String
-    Description: (Optional) The name of a second role which can execute products in this portfolio.
+    Description: "(Optional) The name of a second role which can execute products in this portfolio."
     
+  LinkedRole3:
+    Type: String
+    Description: (Optional) The name of a third role which can execute products in this portfolio.
+
+  # RepoRootURL:
+  #   Type: String
+  #   Description: Root URL for the repo containing the product templates.
+  #   Default: "https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/"
+
   RepoRootURL:
     Type: String
-    Description: S3 root URL for the repository containing the product templates.
-    Default: 'https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/'
+    Description: Root URL for the repo containing the product templates.
+    Default: "https://s3.amazonaws.com/service-catalog-reference-architecture-314628052097/"
 
 Conditions:
   CreateLaunchConstraint: !Equals 
@@ -64,10 +73,13 @@ Conditions:
     - !Equals 
       - !Ref LinkedRole1
       - ''
-
   CondLinkRole2: !Not 
     - !Equals 
       - !Ref LinkedRole2
+      - ''
+  CondLinkRole3: !Not 
+    - !Equals 
+      - !Ref LinkedRole3
       - ''
 
 Resources:
@@ -93,6 +105,14 @@ Resources:
       PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole2}'
       PortfolioId: !Ref SC1BUportfolio
       PrincipalType: IAM
+
+  addrole3:
+    Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
+    Condition: CondLinkRole3
+    Properties:
+      PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole3}'
+      PortfolioId: !Ref SC1BUportfolio
+      PrincipalType: IAM 
 
   LaunchConstraintRole:
     UpdateReplacePolicy: Delete

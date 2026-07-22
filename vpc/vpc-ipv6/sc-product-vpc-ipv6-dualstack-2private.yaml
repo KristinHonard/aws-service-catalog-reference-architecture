@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Linux EC2 Apache Demo Webserver ServiceCatalog product. (fdp-1p4dlgcoi)
+Description: VPC IPv6 Dualstack 2 Private Subnets ServiceCatalog product.
 
 Parameters:
   PortfolioProvider:
@@ -20,37 +20,36 @@ Parameters:
     Description: Root url for the repo containing the product templates.
 
 Resources:
-  Linux2023Product:
+  VPCIPv6Dualstack2PrivateSubnetsProduct:
     Type: AWS::ServiceCatalog::CloudFormationProduct
     Properties:
-      Name: Linux 2023 EC2 Instance
-      Description: This CloudFormation template creates a securely configured Amazon Linux 2023 EC2 instance with comprehensive monitoring and security hardening.
+      Name: VPC IPv6 Dualstack 2 Private Subnets
+      Description: This CloudFormation template creates a securely configured Amazon VPC with IPv6 dualstack and 2 private subnets.
       Owner: !Ref PortfolioProvider
       Distributor: !Ref PortfolioProvider
       SupportDescription: ITS Cloud Support
       SupportEmail: ITSCloudSupport@mathematica-mpr.com
       ProductType: CLOUD_FORMATION_TEMPLATE
       ProvisioningArtifactParameters:
-        - Description: Linux 2023 EC2 instance with monitoring and security hardening
+        - Description: VPC IPv6 Dualstack 2 Private Subnets
           Info:
-            LoadTemplateFromURL: !Sub "${RepoRootURL}ec2/sc-template-ec2-linux2023-instance.yaml"
-          Name: Linux 2023 v1.0
-
-  AssociateLinux2023Product:
+            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-template-vpc-ipv6-dualstack-2private.yaml'
+          Name: VPC IPv6 Dualstack 2 Private Subnets v1.0.0
+  AssociateVPCIPv6Dualstack2PrivateSubnetsProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref Linux2023Product
+      ProductId: !Ref VPCIPv6Dualstack2PrivateSubnetsProduct
 
-  constraintLinux2023:
+  constraintVPCIPv6Dualstack2PrivateSubnets:
     Type: AWS::ServiceCatalog::LaunchRoleConstraint
-    DependsOn: AssociateLinux2023Product
+    DependsOn: AssociateVPCIPv6Dualstack2PrivateSubnetsProduct
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref Linux2023Product
+      ProductId: !Ref VPCIPv6Dualstack2PrivateSubnetsProduct
       LocalRoleName: !Ref LaunchConstraintRole
       Description: !Ref LaunchConstraintRole
 
 Outputs:
   ProductId:
-    Value: !Ref Linux2023Product
+    Value: !Ref VPCIPv6Dualstack2PrivateSubnetsProduct

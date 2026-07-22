@@ -33,7 +33,7 @@ Resources:
       ProvisioningArtifactParameters:
         - Description: VPC IPv4 3 Public 3 Private 3 NAT Subnets
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv4/sc-vpc-ipv4-3public-3private-3nat.yaml'
+            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc-ipv4/sc-template-vpc-ipv4-3public-3private-3nat.yaml'
           Name: VPC IPv4 3 Public 3 Private 3 NAT Subnets v1.0.0
   AssociateVPCIPv43Public3Private3NATSubnetsProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation

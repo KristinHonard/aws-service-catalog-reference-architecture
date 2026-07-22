@@ -121,7 +121,7 @@ Resources:
     Condition: CreateLaunchConstraint
     Properties:
       TemplateURL:
-        Fn::Sub: "${RepoRootURL}iam/sc-serverless-launchrole.yaml"
+        Fn::Sub: "${RepoRootURL}iam/sc-template-iam-serverless-launchrole.yaml"
       TimeoutInMinutes: 5  
 
   serverlessproduct:
@@ -142,7 +142,7 @@ Resources:
         RepoRootURL:
           Ref: RepoRootURL
       TemplateURL:
-        Fn::Sub: "${RepoRootURL}serverless/sc-product-serverless-lambda.yaml"
+        Fn::Sub: "${RepoRootURL}serverless/sc-product-serverless-lambda.yml"
       TimeoutInMinutes: 5
 
 Outputs:

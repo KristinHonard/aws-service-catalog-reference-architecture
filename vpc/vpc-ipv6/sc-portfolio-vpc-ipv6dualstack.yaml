@@ -113,7 +113,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateLaunchConstraint
     Properties:
-      TemplateURL: !Sub '${RepoRootURL}iam/sc-vpc-launchrole.yaml'
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-ec2-launchrole.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV6dualstack2privatesubnetsproduct:
@@ -129,7 +129,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-2private.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-2private.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV6dualstack3privatesubnets:
@@ -145,7 +145,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-3private.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3private.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV6dualstack4privatesubnetsproduct:
@@ -161,7 +161,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-4private.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-4private.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV6dualstack2public2private1natproduct:
@@ -177,7 +177,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-2public-2private-1nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-2public-2private-1nat.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV6dualstack2public2private2natproduct:
@@ -193,7 +193,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-2public-2private-2nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-2public-2private-2nat.yaml'
       TimeoutInMinutes: 5
 
   vpcIPV6dualstack3public3private1natproduct:
@@ -209,7 +209,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-3public-3private-1nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3public-3-private-1nat.yaml'
       TimeoutInMinutes: 5
 
   vpcIPV6dualstack3public3private2natproduct:
@@ -225,7 +225,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-3public-3private-2nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3public-3-private-2nat.yaml'
       TimeoutInMinutes: 5
 
   vpcIPV6dualstack3public3private3natproduct:
@@ -241,7 +241,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-3public-3private-3nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3public-3-private-3-nat.yaml'
       TimeoutInMinutes: 5
 
   vpcIPV6dualstack4public4private2natproduct:
@@ -257,7 +257,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-product-vpc-ipv6-dualstack-4public-4private-2nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-4public-4private-2nat.yaml'
       TimeoutInMinutes: 5
 
 Outputs:
@@ -290,30 +290,30 @@ Outputs:
 
   vpcIPV6dualstack2public2privates1natsubnetsproductId:
     Value: !GetAtt 
-      - vpcIPV6dualstack2public2privates1natsubnetsproduct
+      - vpcIPV6dualstack2public2private1natproduct
       - Outputs.ProductId
 
   vpcIPV6dualstack2public2privates2natsubnetsproductId:
     Value: !GetAtt 
-      - vpcIPV6dualstack2public2privates2natsubnetsproduct
+      - vpcIPV6dualstack2public2private2natproduct
       - Outputs.ProductId
 
   vpcIPV6dualstack3public3privates1natsubnetsproductId:
     Value: !GetAtt 
-      - vpcIPV6dualstack3public3privates1natsubnetsproduct
+      - vpcIPV6dualstack3public3private1natproduct
       - Outputs.ProductId
 
   vpcIPV6dualstack3public3privates2natsubnetsproductId:
     Value: !GetAtt 
-      - vpcIPV6dualstack3public3privates2natsubnetsproduct
+      - vpcIPV6dualstack3public3private2natproduct
       - Outputs.ProductId
 
   vpcIPV6dualstack3public3privates3natsubnetsproductId:
     Value: !GetAtt 
-      - vpcIPV6dualstack3public3privates3natsubnetsproduct
+      - vpcIPV6dualstack3public3private3natproduct
       - Outputs.ProductId
 
   vpcIPV6dualstack4public4privates2natsubnetsproductId:
     Value: !GetAtt  
-      - vpcIPV6dualstack4public4privates2natsubnetsproduct
+      - vpcIPV6dualstack4public4private2natproduct
       - Outputs.ProductId

@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: VPC IPv6 Dualstack 2 Private Subnets ServiceCatalog product.
+Description: Monitoring and alerting system for serverless API applications that use API Gateway and Lambda.
 
 Parameters:
   PortfolioProvider:
@@ -9,7 +9,7 @@ Parameters:
 
   LaunchConstraintRole:
     Type: String
-    Description: Launch constraint role for EC2 products.
+    Description: Launch constraint role for Serverless Monitoring products.
 
   PortfolioId:
     Type: String
@@ -20,36 +20,37 @@ Parameters:
     Description: Root url for the repo containing the product templates.
 
 Resources:
-  VPCIPv6Dualstack2PrivateSubnetsProduct:
+  ServerlessMonitoringProduct:
     Type: AWS::ServiceCatalog::CloudFormationProduct
     Properties:
-      Name: VPC IPv6 Dualstack 2 Private Subnets
-      Description: This CloudFormation template creates a securely configured Amazon VPC with IPv6 dualstack and 2 private subnets.
+      Name: Serverless Monitoring
+      Description: This product builds a SNS Topic for sending alarm notifications via email API Gateway CloudWatch Alarms4XX error alarm, client errors5XX error alarm, and server errors Lambda CloudWatch Alarm Monitors function execution errors.
       Owner: !Ref PortfolioProvider
       Distributor: !Ref PortfolioProvider
       SupportDescription: ITS Cloud Support
       SupportEmail: ITSCloudSupport@mathematica-mpr.com
       ProductType: CLOUD_FORMATION_TEMPLATE
       ProvisioningArtifactParameters:
-        - Description: VPC IPv6 Dualstack 2 Private Subnets
+        - Description: Serverless Monitoring solution 
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-vpc-ipv6-dualstack-2private.yaml'
-          Name: VPC IPv6 Dualstack 2 Private Subnets v1.0.0
-  AssociateVPCIPv6Dualstack2PrivateSubnetsProduct:
+            LoadTemplateFromURL: !Sub '${RepoRootURL}1bu/sc-template-1bu-serverless-monitoring.yaml'
+          Name: Serverless Monitoring v1.0
+
+  AssociateServerlessMonitoringProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref VPCIPv6Dualstack2PrivateSubnetsProduct
+      ProductId: !Ref ServerlessMonitoringProduct
 
-  constraintVPCIPv6Dualstack2PrivateSubnets:
+  constraintServerlessMonitoring:
     Type: AWS::ServiceCatalog::LaunchRoleConstraint
-    DependsOn: AssociateVPCIPv6Dualstack2PrivateSubnetsProduct
+    DependsOn: AssociateServerlessMonitoringProduct
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref VPCIPv6Dualstack2PrivateSubnetsProduct
+      ProductId: !Ref ServerlessMonitoringProduct
       LocalRoleName: !Ref LaunchConstraintRole
       Description: !Ref LaunchConstraintRole
 
 Outputs:
   ProductId:
-    Value: !Ref VPCIPv6Dualstack2PrivateSubnetsProduct
+    Value: !Ref ServerlessMonitoringProduct

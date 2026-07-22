@@ -28,7 +28,7 @@ Resources:
       ProvisioningArtifactParameters:
         - Description: baseline version
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}s3/sc-s3-mfa-ra.json'
+            LoadTemplateFromURL: !Sub '${RepoRootURL}s3/sc-template-s3-mfa-ra.yaml'
           Name: v1.0
   Associates3:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation

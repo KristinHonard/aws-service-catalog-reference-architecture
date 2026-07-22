@@ -33,7 +33,7 @@ Resources:
       ProvisioningArtifactParameters:
         - Description: Windows 2016 EC2 instance with monitoring and security hardening
           Info:
-            LoadTemplateFromURL: !Sub "${RepoRootURL}ec2/sc-ec2-windows2016-instance.yaml"
+            LoadTemplateFromURL: !Sub "${RepoRootURL}ec2/sc-template-ec2-windows2016-instance.yaml"
           Name: Windows 2016 v1.0
 
   AssociateWindows2016Product:

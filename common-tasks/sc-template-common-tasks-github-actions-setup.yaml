@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template to create a GitHub Actions OIDC provider and IAM role'
+
+Parameters:
+  GitHubRepoName:
+    Description: The name of the GitHub repository (for example, ProjectManifest)
+    Type: String
+    Default: ProjectManifest
+
+  GitHubOwner:
+    Description: The GitHub repository owner or organization (for example, mathematica-org)
+    Type: String
+    Default: mathematica-org
+
+  MaxSessionDuration:
+    Description: The maximum duration, in seconds, of a role session
+    Type: Number
+    Default: 3600
+    MinValue: 3600
+    MaxValue: 43200
+
+Resources:
+  GitHubOpenIdConnectProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'GitHubActions-${GitHubRepoName}-Role'
+      Description: Role for GitHub Actions and AWS integration
+      Path: /
+      MaxSessionDuration: !Ref MaxSessionDuration
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !GetAtt GitHubOpenIdConnectProvider.Arn
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOwner}/${GitHubRepoName}:*'
+      Tags:
+        - Key: its:iam:managedrole
+          Value: githubactions
+
+Outputs:
+  GitHubOpenIdConnectProviderArn:
+    Description: ARN of the GitHub Actions OIDC provider
+    Value: !GetAtt GitHubOpenIdConnectProvider.Arn
+
+  GitHubActionsRoleArn:
+    Description: ARN of the IAM role assumed by GitHub Actions
+    Value: !GetAtt GitHubActionsRole.Arn

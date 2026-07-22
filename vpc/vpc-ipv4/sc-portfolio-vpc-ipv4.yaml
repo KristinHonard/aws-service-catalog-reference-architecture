@@ -113,7 +113,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateLaunchConstraint
     Properties:
-      TemplateURL: !Sub '${RepoRootURL}iam/sc-vpc-launchrole.yaml'
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-ec2-launchrole.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV42privateproduct:
@@ -129,7 +129,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPPv4portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv4/sc-product-vpc-ipv4-2private.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv4/sc-product-vpc-ipv4-2private.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV42public2private1natproduct:
@@ -145,7 +145,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPPv4portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv4/sc-product-vpc-ipv4-2public-2private-1nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv4/sc-product-vpc-ipv4-2public-2private-1nat.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV42public2private2natproduct:
@@ -161,7 +161,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPPv4portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv4/sc-product-vpc-ipv4-2public-2private-2nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv4/sc-product-vpc-ipv4-2public-2private-2nat.yaml'
       TimeoutInMinutes: 5
  
   vpcIPV43public3private3natproduct:
@@ -177,7 +177,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPPv4portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc_ipv4/sc-product-vpc-ipv4-3public-3private-3nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv4/sc-product-vpc-ipv4-3public-3private-3nat.yaml'
       TimeoutInMinutes: 5
 
 Outputs:

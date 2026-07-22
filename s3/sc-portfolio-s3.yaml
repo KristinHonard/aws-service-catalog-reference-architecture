@@ -118,7 +118,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateLaunchConstraint
     Properties:
-      TemplateURL: !Sub '${RepoRootURL}iam/sc-s3-launchrole.yaml'
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-s3-launchrole.yaml'
       TimeoutInMinutes: 5
 
   s3publicproduct:

@@ -33,7 +33,7 @@ Resources:
       ProvisioningArtifactParameters:
         - Description: VPC IPv4 2 Private Subnets
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv4/sc-vpc-ipv4-2private.yaml'
+            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc-ipv4/sc-template-vpc-ipv4-2private.yaml'
           Name: VPC IPv4 2 Private Subnets v1.0.0
   AssociateVPCIPv42PrivateSubnetsProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation

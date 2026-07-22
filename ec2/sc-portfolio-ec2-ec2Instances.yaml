@@ -118,7 +118,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateLaunchConstraint
     Properties:
-      TemplateURL: !Sub '${RepoRootURL}iam/sc-ec2Instances-launchrole.yaml'
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-ec2-launchrole.yaml'
       TimeoutInMinutes: 5
  
   ec2linux2023product:

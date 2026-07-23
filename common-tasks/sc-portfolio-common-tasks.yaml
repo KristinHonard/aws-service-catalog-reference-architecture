@@ -36,7 +36,7 @@ Parameters:
   PortfolioDescription:
     Type: String
     Description: Portfolio Description
-    Default: "MCSS Service Catalog Portfolio that contains reference architecture products for Common Tasks demo."
+    Default: "MCSS Service Catalog Portfolio that contains reference architecture products for Common Tasks."
 
   LaunchRoleName:
     Type: String

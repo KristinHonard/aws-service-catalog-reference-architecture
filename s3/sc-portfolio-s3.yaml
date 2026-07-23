@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: S3 Portfolio for Service Catalog. (fdp-1p5rtpgl6)
+Description: S3 Portfolio for Service Catalog.
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -27,12 +27,12 @@ Parameters:
   PortfolioProvider:
     Type: String
     Description: Provider Name
-    Default: IT Services
+    Default: ITS Cloud Support
 
   PortfolioName:
     Type: String
     Description: Portfolio Name
-    Default: Service Catalog S3 Reference Architecture
+    Default: MCSS Service Catalog S3 Reference Architecture
 
   PortfolioDescription:
     Type: String
@@ -41,22 +41,19 @@ Parameters:
 
   LaunchRoleName:
     Type: String
-    Description: Name of the launch constraint role for VPC products. leave this blank to create the role.
+    Description: Name of the launch constraint role for S3 products. Leave this blank to create the role.
 
   LinkedRole1:
     Type: String
     Description: (Optional) The name of a role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_Project_Administrator'
 
   LinkedRole2:
     Type: String
     Description: (Optional) The name of a second role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_Project_Developer'
 
   LinkedRole3:
     Type: String
     Description: (Optional) The name of a third role which can execute products in this portfolio.
-    Default: 'AWSReservedSSO_AdministratorAccess'
 
   RepoRootURL:
     Type: String

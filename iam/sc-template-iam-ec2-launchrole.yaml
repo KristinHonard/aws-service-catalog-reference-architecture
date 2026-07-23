@@ -1,4 +1,5 @@
-Description: "ServiceCatalog EC2 and VPC Launch Role. (fdp-1p5rtpgmo)"
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "ServiceCatalog EC2 Launch Role."
 Resources:
   SCEC2LaunchRole:
     Type: 'AWS::IAM::Role'
@@ -57,7 +58,7 @@ Resources:
                   - "iam:PassRole"
                   - "iam:PutRolePolicy"
                   - "iam:RemoveRoleFromInstanceProfile"
-                  - "iam:TagRole" 
+                  - "iam:TagRole"
                   - "iam:TagUser"
                   - "iam:UntagRole"
                   - "iam:UntagUser"

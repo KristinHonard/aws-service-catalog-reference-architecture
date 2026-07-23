@@ -1,9 +1,10 @@
-Description: "ServiceCatalog Serverless Launch Role. (fdp-1p5s1035k)"
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "ServiceCatalog VPC Launch Role."
 Resources:
-  SCServerlessLaunchRole:
+  SCVPCLaunchRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: SCServerlessLaunchRole 
+      RoleName: SCVPCLaunchRole
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -33,7 +34,6 @@ Resources:
                   - "cloudformation:ExecuteChangeSet"
                   - "cloudformation:Get*"
                   - "cloudformation:List*"
-                  - "cloudformation:PreviewStackUpdate"
                   - "cloudformation:UpdateStack"
                   - "cloudformation:UpdateTerminationProtection"
                   - "cloudformation:ValidateTemplate"
@@ -121,7 +121,7 @@ Resources:
                 Effect: "Allow"        
 Outputs:
     LaunchRoleArn:
-        Value: !GetAtt SCServerlessLaunchRole.Arn
+        Value: !GetAtt SCVPCLaunchRole.Arn
     LaunchRoleName:
-        Value: !Ref SCServerlessLaunchRole
+        Value: !Ref SCVPCLaunchRole
         

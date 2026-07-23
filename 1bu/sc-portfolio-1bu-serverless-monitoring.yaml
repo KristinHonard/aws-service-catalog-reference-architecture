@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: 1BU Demo Portfolio for Service Catalog. (fdp-1p4da46nc)
+Description: 1BU Demo Portfolio for Service Catalog.
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -36,12 +36,11 @@ Parameters:
   PortfolioDescription:
     Type: String
     Description: Portfolio Description
-    Default: "MCSS Service Catalog Portfolio that contains reference architecture products for 1BU demo."
+    Default: "MCSS Service Catalog Portfolio that contains reference architecture products for 1BU."
 
   LaunchRoleName:
     Type: String
     Description: "(Optional) Name of the launch constraint role for 1BU products. Leave this blank to create the role."
-    Default: ""
 
   LinkedRole1:
     Type: String
@@ -50,12 +49,10 @@ Parameters:
   LinkedRole2:
     Type: String
     Description: "(Optional) The name of a second role which can execute products in this portfolio."
-    Default: ""
 
   LinkedRole3:
     Type: String
     Description: "(Optional) The name of a third role which can execute products in this portfolio."
-    Default: ""
 
   RepoRootURL:
     Type: String

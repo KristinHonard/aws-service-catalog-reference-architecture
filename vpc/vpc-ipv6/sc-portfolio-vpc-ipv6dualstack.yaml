@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: VPC IPv6 Dual Stack Portfolio for Service Catalog. (fdp-1p4da46nc)
+Description: VPC IPv6 Dual Stack Portfolio for Service Catalog.
 
 Metadata:
   AWS::CloudFormation::Interface:

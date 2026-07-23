@@ -1,8 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Serverless Portfolio for Service Catalog. (fdp-1p5s1036d)
-
+Description: Serverless Portfolio for Service Catalog.
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -27,35 +26,29 @@ Parameters:
   PortfolioProvider:
     Type: String
     Description: Provider Name
-    Default: IT Services
+    Default: ITS Cloud Support
 
   PortfolioName:
     Type: String
     Description: Portfolio Name
-    Default: Service Catalog Serverless Reference Architecture
+    Default: MCSS Service Catalog Serverless Reference Architecture
 
   PortfolioDescription:
     Type: String
     Description: Portfolio Description
-    Default: Service Catalog Portfolio that contains reference architecture products
-      for Serverless Framework.
+    Default: MCSS Service Catalog Portfolio that contains reference architecture products for Serverless Framework.
 
   LaunchRoleName:
     Type: String
-    Description: Name of the launch constraint role for Serverless products. leave
-      this blank to create the role.
+    Description: Name of the launch constraint role for Serverless products. Leave this blank to create the role.
 
   LinkedRole1:
     Type: String
-    Description: "(Optional) The name of a role which can execute products in this
-      portfolio."
-    Default: 'AWSReservedSSO_Project_Administrator'
+    Description: "(Optional) The name of a role which can execute products in this portfolio."
 
   LinkedRole2:
     Type: String
-    Description: "(Optional) The name of a second role which can execute products
-      in this portfolio."
-    Default: 'AWSReservedSSO_Project_Developer'
+    Description: "(Optional) The name of a second role which can execute products in this portfolio."
 
   RepoRootURL:
     Type: String

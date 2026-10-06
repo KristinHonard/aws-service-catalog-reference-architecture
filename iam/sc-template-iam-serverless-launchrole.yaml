@@ -1,42 +1,61 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "ServiceCatalog Serverless Launch Role."
+
+Description: "AWS Service Catalog Serverless launch constraint role."
+
 Resources:
-  SCServerlessLaunchRole:
+  SCServerlessLaunchConstraintRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: SCServerlessLaunchRole
+      RoleName: SCServerlessLaunchConstraintRole
+      Description: >
+        Launch role assumed by AWS Service Catalog to provision
+        CloudFormation-based Service Catalog products.
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          - Sid: AllowServiceCatalogAssumeRole
+            Effect: Allow
             Principal:
               Service:
                 - servicecatalog.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
-      Path: /
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub
+                  arn:${AWS::Partition}:servicecatalog:${AWS::Region}:${AWS::AccountId}:*
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
       Policies:
-        - PolicyName: SCLaunchPolicy
+        - PolicyName: ServiceCatalogProvisioningArtifactAccess
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
-              - Sid: SCLaunchPolicySID
+              - Sid: ReadServiceCatalogProvisioningArtifacts
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    s3:ExistingObjectTag/servicecatalog:provisioning: 'true'
+        - PolicyName: ProductResourcePermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowResourceTagging
+                Effect: Allow
+                Action:
+                  - tag:GetResources
+                  - tag:TagResources
+                  - tag:UntagResources
+                Resource: '*'
+              - Sid: ProductServicePermissions
+                Effect: Allow
                 Action:
                   - "apigateway:*"
-                  - "cloudformation:CancelUpdateStack"
-                  - "cloudformation:ContinueUpdateRollback"
-                  - "cloudformation:CreateChangeSet"
-                  - "cloudformation:CreateStack"
-                  - "cloudformation:CreateUploadBucket"
-                  - "cloudformation:DeleteStack"
-                  - "cloudformation:Describe*"
-                  - "cloudformation:EstimateTemplateCost"
-                  - "cloudformation:ExecuteChangeSet"
-                  - "cloudformation:Get*"
-                  - "cloudformation:List*"
-                  - "cloudformation:UpdateStack"
-                  - "cloudformation:UpdateTerminationProtection"
-                  - "cloudformation:ValidateTemplate"
                   - "dynamodb:CreateTable"
                   - "dynamodb:DeleteTable"
                   - "dynamodb:DescribeTable"
@@ -118,10 +137,10 @@ Resources:
                   - "states:CreateStateMachine"
                   - "states:DeleteStateMachine"
                 Resource: '*'
-                Effect: "Allow"
+
 Outputs:
     LaunchRoleArn:
-        Value: !GetAtt SCServerlessLaunchRole.Arn
+        Value: !GetAtt SCServerlessLaunchConstraintRole.Arn
     LaunchRoleName:
-        Value: !Ref SCServerlessLaunchRole
+        Value: !Ref SCServerlessLaunchConstraintRole
         

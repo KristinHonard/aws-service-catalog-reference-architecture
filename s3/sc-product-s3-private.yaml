@@ -1,5 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
+
 Description: S3 private ServiceCatalog product. (fdp-1p4da46rd)
+
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+
 Parameters:
   PortfolioProvider:
     Type: String
@@ -13,31 +19,37 @@ Parameters:
   RepoRootURL:
     Type: String
     Description: Root url for the repo containing the product templates.
+
 Resources:
   scs3product:
     Type: AWS::ServiceCatalog::CloudFormationProduct
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Offers the CIDR-restricted private S3 bucket template through Service Catalog.
+        must: Keep the provisioning artifact pointed at the CIDR-restricted bucket template.
     Properties:
       Name: Amazon S3 Private Bucket with CIDR Restricted Access
-      Description: This product builds an Amazon AWS S3 bucket with private access accessible from a restricted soure.
+      Description: Creates a private Amazon S3 bucket with access restricted to specified CIDR blocks.
       Owner: !Ref PortfolioProvider
       Distributor: !Ref PortfolioProvider
-      SupportDescription: Operations Team
-      SupportEmail: support@yourcompany.com
-      AcceptLanguage: en
-      SupportUrl: http://helpdesk.yourcompany.com
+      SupportDescription: ITS Cloud Support
+      SupportEmail: ITSCloudSupport@mathematica-mpr.com
+      ProductType: CLOUD_FORMATION_TEMPLATE
       ProvisioningArtifactParameters:
-        - Description: baseline version
+        - Description: Private S3 bucket with CIDR-restricted access
           Info:
             LoadTemplateFromURL: !Sub '${RepoRootURL}s3/sc-template-s3-cidr-ra.yaml'
-          Name: v1.0
-  Associates3:
+          Name: S3 CIDR Restricted Bucket v1.0
+
+  Associates3private:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:
       PortfolioId: !Ref PortfolioId
       ProductId: !Ref scs3product
-  constraintec2linux:
+
+  constraints3private:
     Type: AWS::ServiceCatalog::LaunchRoleConstraint
-    DependsOn: Associates3
+    DependsOn: Associates3private
     Properties:
       PortfolioId: !Ref PortfolioId
       ProductId: !Ref scs3product

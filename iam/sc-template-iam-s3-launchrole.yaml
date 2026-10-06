@@ -1,59 +1,66 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "ServiceCatalog S3 Launch Role."
+
+Description: "AWS Service Catalog S3 launch constraint role."
+
 Resources:
-  SCS3LaunchRole:
+  SCS3LaunchConstraintRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: SCS3LaunchRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      RoleName: SCS3LaunchConstraintRole
+      Description: >
+        Launch role assumed by AWS Service Catalog to provision
+        CloudFormation-based Service Catalog products.
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          - Sid: AllowServiceCatalogAssumeRole
+            Effect: Allow
             Principal:
               Service:
                 - servicecatalog.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
-      Path: /
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub
+                  arn:${AWS::Partition}:servicecatalog:${AWS::Region}:${AWS::AccountId}:*
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
       Policies:
-        - PolicyName: SCLaunchPolicy
+        - PolicyName: ServiceCatalogProvisioningArtifactAccess
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
-              - Sid: SCLaunchPolicySID
+              - Sid: ReadServiceCatalogProvisioningArtifacts
                 Effect: Allow
                 Action:
-                  - "servicecatalog:ListServiceActionsForProvisioningArtifact"
-                  - "servicecatalog:ExecuteprovisionedProductServiceAction"
-                  - "iam:ListRolePolicies"
-                  - "iam:ListPolicies"
-                  - "iam:DeleteRole"
-                  - "iam:GetRole"
-                  - "iam:PassRole"
-                  - "iam:ListRoles"
-                  - "iam:CreateRole"
-                  - "iam:DetachRolePolicy"
-                  - "iam:AttachRolePolicy"
-                  - "cloudformation:DescribeStackResource"
-                  - "cloudformation:DescribeStackResources"
-                  - "cloudformation:GetTemplate"
-                  - "cloudformation:List*"
-                  - "cloudformation:DescribeStackEvents"
-                  - "cloudformation:DescribeStacks"
-                  - "cloudformation:CreateStack"
-                  - "cloudformation:DeleteStack"
-                  - "cloudformation:DescribeStackEvents"
-                  - "cloudformation:DescribeStacks"
-                  - "cloudformation:GetTemplateSummary"
-                  - "cloudformation:SetStackPolicy"
-                  - "cloudformation:ValidateTemplate"
-                  - "cloudformation:UpdateStack"
+                  - s3:GetObject
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    s3:ExistingObjectTag/servicecatalog:provisioning: 'true'
+        - PolicyName: ProductResourcePermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowResourceTagging
+                Effect: Allow
+                Action:
+                  - tag:GetResources
+                  - tag:TagResources
+                  - tag:UntagResources
+                Resource: '*'
+              - Sid: ProductServicePermissions
+                Effect: Allow
+                Action:
+                  - "s3:*"
+                  - "s3-object-lambda:*"
                 Resource: '*'
 Outputs:
     LaunchRoleArn:
-        Value: !GetAtt SCS3LaunchRole.Arn
+        Value: !GetAtt SCS3LaunchConstraintRole.Arn
     LaunchRoleName:
-        Value: !Ref SCS3LaunchRole
+        Value: !Ref SCS3LaunchConstraintRole
         

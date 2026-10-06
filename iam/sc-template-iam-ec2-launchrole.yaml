@@ -1,92 +1,66 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "ServiceCatalog EC2 Launch Role."
+
+Description: "AWS Service Catalog EC2 launch constraint role."
+
 Resources:
-  SCEC2LaunchRole:
+  SCEC2LaunchConstraintRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: SCEC2LaunchRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
-        - arn:aws:iam::aws:policy/AmazonSSMFullAccess
+      RoleName: SCEC2LaunchConstraintRole
+      Description: >
+        Launch role assumed by AWS Service Catalog to provision
+        CloudFormation-based Service Catalog products.
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          - Sid: AllowServiceCatalogAssumeRole
+            Effect: Allow
             Principal:
               Service:
                 - servicecatalog.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
-      Path: /
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub
+                  arn:${AWS::Partition}:servicecatalog:${AWS::Region}:${AWS::AccountId}:*
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
       Policies:
-        - PolicyName: SCLaunchPolicy
+        - PolicyName: ServiceCatalogProvisioningArtifactAccess
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
-              - Sid: SCLaunchPolicySID
+              - Sid: ReadServiceCatalogProvisioningArtifacts
                 Effect: Allow
                 Action:
-                  - "cloudformation:CreateStack"
-                  - "cloudformation:DeleteStack"
-                  - "cloudformation:DescribeStackEvents"
-                  - "cloudformation:DescribeStackEvents"
-                  - "cloudformation:DescribeStackResource"
-                  - "cloudformation:DescribeStackResources"
-                  - "cloudformation:DescribeStacks"
-                  - "cloudformation:DescribeStacks"
-                  - "cloudformation:GetTemplate"
-                  - "cloudformation:GetTemplateSummary"
-                  - "cloudformation:List*"
-                  - "cloudformation:SetStackPolicy"
-                  - "cloudformation:UpdateStack"
-                  - "cloudformation:ValidateTemplate"
-                  - "iam:AddRoleToInstanceProfile"
-                  - "iam:AttachRolePolicy"
-                  - "iam:CreateInstanceProfile"
-                  - "iam:CreateRole"
-                  - "iam:DeleteInstanceProfile"
-                  - "iam:DeleteRole"
-                  - "iam:DeleteRolePolicy"
-                  - "iam:DetachRolePolicy"
-                  - "iam:GetInstanceProfile"
-                  - "iam:GetRole"
-                  - "iam:ListInstanceProfiles"
-                  - "iam:ListInstanceProfilesForRole"
-                  - "iam:ListPolicies"
-                  - "iam:ListRolePolicies"
-                  - "iam:ListRoles"
-                  - "iam:PassRole"
-                  - "iam:PutRolePolicy"
-                  - "iam:RemoveRoleFromInstanceProfile"
-                  - "iam:TagRole"
-                  - "iam:TagUser"
-                  - "iam:UntagRole"
-                  - "iam:UntagUser"
-                  - "iam:getRolePolicy"
-                  - "s3:GetObject"
-                  - "servicecatalog:AssociateResource"
-                  - "servicecatalog:DisassociateResource"
-                  - "servicecatalog:ExecuteprovisionedProductServiceAction"
-                  - "servicecatalog:ListServiceActionsForProvisioningArtifact"
+                  - s3:GetObject
                 Resource: '*'
-        - PolicyName: CloudWatchPolicy
+                Condition:
+                  StringEquals:
+                    s3:ExistingObjectTag/servicecatalog:provisioning: 'true'
+        - PolicyName: ProductResourcePermissions
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
-              - Sid: CloudWatchPolicySID
+              - Sid: AllowResourceTagging
                 Effect: Allow
                 Action:
-                  - "cloudwatch:PutMetricAlarm"
-                  - "cloudwatch:DescribeAlarms"
-                  - "cloudwatch:TagResource"
-                  - "logs:CreateLogGroup"
-                  - "logs:DescribeLogGroups"
-                  - "logs:TagLogGroup"
-                  - "logs:PutRetentionPolicy"
+                  - tag:GetResources
+                  - tag:TagResources
+                  - tag:UntagResources
                 Resource: '*'
+              - Sid: ProductServicePermissions
+                Effect: Allow
+                Action:
+                  - "ec2:*"
+                Resource: '*'
+
 Outputs:
     LaunchRoleArn:
-        Value: !GetAtt SCEC2LaunchRole.Arn
+        Value: !GetAtt SCEC2LaunchConstraintRole.Arn
     LaunchRoleName:
-        Value: !Ref SCEC2LaunchRole
+        Value: !Ref SCEC2LaunchConstraintRole
         

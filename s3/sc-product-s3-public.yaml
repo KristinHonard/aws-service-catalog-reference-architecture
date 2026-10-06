@@ -1,43 +1,58 @@
 AWSTemplateFormatVersion: '2010-09-09'
+
 Description: S3 public ServiceCatalog product. (fdp-1p4da46r6)
+
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+
 Parameters:
   PortfolioProvider:
     Type: String
     Description: Owner and Distributor Name
+
   LaunchConstraintARN:
     Type: String
     Description: ARN of the launch constraint role for S3 products.
+
   PortfolioId:
     Type: String
     Description: The ServiceCatalog portfolio this product will be attached to.
+
   RepoRootURL:
     Type: String
     Description: Root url for the repo containing the product templates.
+
 Resources:
   scs3product:
     Type: AWS::ServiceCatalog::CloudFormationProduct
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Offers the public read-only S3 bucket template through Service Catalog.
+        must: Keep the provisioning artifact pointed at the public-read bucket template.
     Properties:
       Name: Amazon S3 Public Bucket with Read Only Access
-      Description: This product builds an Amazon AWS S3 bucket with options for read only bucket with public access from any source.
+      Description: Creates an Amazon S3 bucket with public read-only access.
       Owner: !Ref PortfolioProvider
       Distributor: !Ref PortfolioProvider
-      SupportDescription: Operations Team
-      SupportEmail: support@yourcompany.com
-      AcceptLanguage: en
-      SupportUrl: http://helpdesk.yourcompany.com
+      SupportDescription: ITS Cloud Support
+      SupportEmail: ITSCloudSupport@mathematica-mpr.com
+      ProductType: CLOUD_FORMATION_TEMPLATE
       ProvisioningArtifactParameters:
-        - Description: baseline version
+        - Description: S3 bucket with public read-only access
           Info:
             LoadTemplateFromURL: !Sub '${RepoRootURL}s3/sc-template-s3-public-ra.yaml'
-          Name: v1.0
-  Associates3:
+          Name: S3 Public Read-Only Bucket v1.0
+
+  Associates3public:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:
       PortfolioId: !Ref PortfolioId
       ProductId: !Ref scs3product
-  constraintec2linux:
+
+  constraints3public:
     Type: AWS::ServiceCatalog::LaunchRoleConstraint
-    DependsOn: Associates3
+    DependsOn: Associates3public
     Properties:
       PortfolioId: !Ref PortfolioId
       ProductId: !Ref scs3product

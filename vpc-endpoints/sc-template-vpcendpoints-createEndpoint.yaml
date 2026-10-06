@@ -1,0 +1,602 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Creates an AWS VPC endpoint with Service Catalog-friendly parameters. Supports
+  FIPS-capable AWS PrivateLink interface endpoints, standard S3/DynamoDB gateway
+  endpoints, existing or newly created endpoint security groups, private DNS,
+  and regional validation for US commercial Regions.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Deployment and endpoint
+        Parameters:
+          - EndpointRegion
+          - EndpointType
+          - EndpointService
+          - CustomServiceName
+          - VpcId
+      - Label:
+          default: Interface endpoint networking
+        Parameters:
+          - SubnetIds
+          - PrivateDnsEnabled
+          - IpAddressType
+          - DnsRecordIpType
+      - Label:
+          default: Interface endpoint security group
+        Parameters:
+          - SecurityGroupMode
+          - ExistingSecurityGroupId
+          - AllowedIPv4Cidr
+          - AllowedIPv6Cidr
+      - Label:
+          default: Gateway endpoint routing
+        Parameters:
+          - GatewayRouteTableIds
+      - Label:
+          default: Resource tags
+        Parameters:
+          - EndpointName
+          - Environment
+          - ManagedBy
+    ParameterLabels:
+      EndpointRegion:
+        default: US Region
+      EndpointType:
+        default: VPC endpoint type
+      EndpointService:
+        default: AWS endpoint service
+      CustomServiceName:
+        default: Custom interface service name
+      VpcId:
+        default: VPC
+      SubnetIds:
+        default: Interface endpoint subnets
+      PrivateDnsEnabled:
+        default: Enable private DNS
+      IpAddressType:
+        default: Endpoint IP address type
+      DnsRecordIpType:
+        default: Endpoint DNS record IP type
+      SecurityGroupMode:
+        default: Security group option
+      ExistingSecurityGroupId:
+        default: Existing security group ID
+      AllowedIPv4Cidr:
+        default: Allowed IPv4 source CIDR
+      AllowedIPv6Cidr:
+        default: Optional allowed IPv6 source CIDR
+      GatewayRouteTableIds:
+        default: Gateway route table IDs
+      EndpointName:
+        default: Endpoint name
+      Environment:
+        default: Environment tag
+      ManagedBy:
+        default: Managed-by tag
+
+Parameters:
+  EndpointRegion:
+    Type: String
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - us-east-2
+      - us-west-1
+      - us-west-2
+    Description: >-
+      Region in which the stack and VPC endpoint are deployed. This value must
+      match the Region selected when launching the CloudFormation stack or
+      Service Catalog provisioned product.
+
+  EndpointType:
+    Type: String
+    Default: Interface
+    AllowedValues:
+      - Interface
+      - Gateway
+    Description: >-
+      Interface is required for the FIPS PrivateLink service options in this
+      template. Gateway is supported only for standard S3 or DynamoDB endpoints.
+
+  EndpointService:
+    Type: String
+    Default: S3FIPS
+    AllowedValues:
+      - S3FIPS
+      - ECRApiFIPS
+      - ECRDockerFIPS
+      - EC2FIPS
+      - EC2AutoScalingFIPS
+      - EBSFIPS
+      - KMSFIPS
+      - STSFIPS
+      - CloudFormationFIPS
+      - AppConfigFIPS
+      - ConfigFIPS
+      - DynamoDBFIPS
+      - SQSFIPS
+      - EventBridgeFIPS
+      - FirewallManagerFIPS
+      - SecurityHubFIPS
+      - SecurityLakeFIPS
+      - WAFv2FIPS
+      - SageMakerApiFIPS
+      - SageMakerRuntimeFIPS
+      - BedrockFIPS
+      - BedrockRuntimeFIPS
+      - CustomInterface
+      - S3Gateway
+      - DynamoDBGateway
+    Description: >-
+      Select a curated AWS PrivateLink FIPS service, a standard gateway service,
+      or CustomInterface for another interface endpoint service name.
+
+  CustomServiceName:
+    Type: String
+    Default: ''
+    Description: >-
+      Used only when EndpointService is CustomInterface. Enter the complete VPC
+      endpoint service name, for example com.amazonaws.us-east-1.example-fips.
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC in the current stack Region that will contain the endpoint.
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: >-
+      Select one or more subnets for an Interface endpoint. For production,
+      normally select subnets in at least two Availability Zones. This parameter
+      is ignored for Gateway endpoints.
+
+  PrivateDnsEnabled:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: >-
+      Enables the AWS service private DNS name for Interface endpoints. The VPC
+      must have DNS support and DNS hostnames enabled.
+
+  IpAddressType:
+    Type: String
+    Default: ipv4
+    AllowedValues:
+      - ipv4
+      - dualstack
+      - ipv6
+    Description: >-
+      IP address type for Interface endpoint ENIs. The selected service and
+      subnets must support the chosen address type.
+
+  DnsRecordIpType:
+    Type: String
+    Default: ipv4
+    AllowedValues:
+      - ipv4
+      - dualstack
+      - ipv6
+      - service-defined
+    Description: >-
+      DNS record IP type for the Interface endpoint. Ensure it is compatible
+      with IpAddressType and the selected AWS service.
+
+  SecurityGroupMode:
+    Type: String
+    Default: CreateNew
+    AllowedValues:
+      - CreateNew
+      - UseExisting
+      - CreateNewAndExisting
+    Description: >-
+      Create a dedicated endpoint security group, associate an existing security
+      group, or attach both to the Interface endpoint.
+
+  ExistingSecurityGroupId:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|^sg-[0-9a-fA-F]{8,17}$'
+    ConstraintDescription: Must be empty or a valid security group ID.
+    Description: >-
+      Required when SecurityGroupMode is UseExisting or CreateNewAndExisting.
+      The security group must exist in the selected VPC.
+
+  AllowedIPv4Cidr:
+    Type: String
+    Default: 10.0.0.0/8
+    AllowedPattern: '^(?:\d{1,3}\.){3}\d{1,3}/(?:[0-9]|[12][0-9]|3[0-2])$'
+    ConstraintDescription: Must be an IPv4 CIDR such as 10.0.0.0/16.
+    Description: >-
+      IPv4 source range allowed to connect to a newly created Interface endpoint
+      security group on TCP 443. Prefer the narrowest VPC/application CIDR.
+
+  AllowedIPv6Cidr:
+    Type: String
+    Default: ''
+    Description: >-
+      Optional IPv6 source CIDR allowed on TCP 443 when creating a security
+      group for an IPv6 or dual-stack endpoint. Leave blank for no IPv6 ingress.
+
+  GatewayRouteTableIds:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|^rtb-[0-9a-fA-F]{8,17}(,rtb-[0-9a-fA-F]{8,17})*$'
+    ConstraintDescription: Must be empty or a comma-separated list of route table IDs with no spaces.
+    Description: >-
+      Required only for Gateway endpoints. Enter one or more route table IDs as
+      a comma-separated list with no spaces, for example rtb-aaa11111,rtb-bbb22222.
+
+  EndpointName:
+    Type: String
+    Default: fips-vpc-endpoint
+    MinLength: 1
+    MaxLength: 128
+    Description: Value used for the Name tag.
+
+  Environment:
+    Type: String
+    Default: Development
+    AllowedValues:
+      - Development
+      - Test
+      - Staging
+      - Production
+    Description: Environment tag applied to created resources.
+
+  ManagedBy:
+    Type: String
+    Default: ServiceCatalog
+    AllowedValues:
+      - ServiceCatalog
+      - CloudFormation
+    Description: ManagedBy tag applied to created resources.
+
+Mappings:
+  ServiceMap:
+    S3FIPS:
+      Suffix: s3-fips
+    ECRApiFIPS:
+      Suffix: ecr-fips.api
+    ECRDockerFIPS:
+      Suffix: ecr-fips.dkr
+    EC2FIPS:
+      Suffix: ec2-fips
+    EC2AutoScalingFIPS:
+      Suffix: autoscaling-fips
+    EBSFIPS:
+      Suffix: ebs-fips
+    KMSFIPS:
+      Suffix: kms-fips
+    STSFIPS:
+      Suffix: sts-fips
+    CloudFormationFIPS:
+      Suffix: cloudformation-fips
+    AppConfigFIPS:
+      Suffix: appconfig-fips
+    ConfigFIPS:
+      Suffix: config-fips
+    DynamoDBFIPS:
+      Suffix: dynamodb-fips
+    SQSFIPS:
+      Suffix: sqs-fips
+    EventBridgeFIPS:
+      Suffix: events-fips
+    FirewallManagerFIPS:
+      Suffix: fms-fips
+    SecurityHubFIPS:
+      Suffix: securityhub-fips
+    SecurityLakeFIPS:
+      Suffix: securitylake-fips
+    WAFv2FIPS:
+      Suffix: wafv2-fips
+    SageMakerApiFIPS:
+      Suffix: sagemaker.api-fips
+    SageMakerRuntimeFIPS:
+      Suffix: sagemaker.runtime-fips
+    BedrockFIPS:
+      Suffix: bedrock-fips
+    BedrockRuntimeFIPS:
+      Suffix: bedrock-runtime-fips
+    CustomInterface:
+      Suffix: custom
+    S3Gateway:
+      Suffix: s3
+    DynamoDBGateway:
+      Suffix: dynamodb
+
+Rules:
+  RegionMustMatchStackRegion:
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - Ref: EndpointRegion
+            - Ref: AWS::Region
+        AssertDescription: >-
+          EndpointRegion must match the Region in which this stack or Service
+          Catalog product is launched.
+
+  EndpointTypeMustMatchService:
+    Assertions:
+      - Assert:
+          Fn::Or:
+            - Fn::And:
+                - Fn::Equals:
+                    - Ref: EndpointType
+                    - Gateway
+                - Fn::Contains:
+                    - - S3Gateway
+                      - DynamoDBGateway
+                    - Ref: EndpointService
+            - Fn::And:
+                - Fn::Equals:
+                    - Ref: EndpointType
+                    - Interface
+                - Fn::Not:
+                    - Fn::Contains:
+                        - - S3Gateway
+                          - DynamoDBGateway
+                        - Ref: EndpointService
+        AssertDescription: >-
+          Gateway can only be used with S3Gateway or DynamoDBGateway. All FIPS
+          and custom services in this template require Interface.
+
+  CustomServiceNameRequired:
+    RuleCondition:
+      Fn::Equals:
+        - Ref: EndpointService
+        - CustomInterface
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: CustomServiceName
+                - ''
+        AssertDescription: CustomServiceName is required for CustomInterface.
+
+  ExistingSecurityGroupRequired:
+    RuleCondition:
+      Fn::And:
+        - Fn::Equals:
+            - Ref: EndpointType
+            - Interface
+        - Fn::Contains:
+            - - UseExisting
+              - CreateNewAndExisting
+            - Ref: SecurityGroupMode
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: ExistingSecurityGroupId
+                - ''
+        AssertDescription: >-
+          ExistingSecurityGroupId is required when SecurityGroupMode is
+          UseExisting or CreateNewAndExisting.
+
+  GatewayRouteTablesRequired:
+    RuleCondition:
+      Fn::Equals:
+        - Ref: EndpointType
+        - Gateway
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: GatewayRouteTableIds
+                - ''
+        AssertDescription: GatewayRouteTableIds is required for Gateway endpoints.
+
+  InterfaceSubnetsMustBeInVpc:
+    RuleCondition:
+      Fn::Equals:
+        - Ref: EndpointType
+        - Interface
+    Assertions:
+      - Assert:
+          Fn::EachMemberEquals:
+            - Fn::ValueOf:
+                - SubnetIds
+                - VpcId
+            - Ref: VpcId
+        AssertDescription: All selected Interface endpoint subnets must be in the selected VPC.
+
+  BedrockFipsRegionSupport:
+    RuleCondition:
+      Fn::Contains:
+        - - BedrockFIPS
+          - BedrockRuntimeFIPS
+        - Ref: EndpointService
+    Assertions:
+      - Assert:
+          Fn::Contains:
+            - - us-east-1
+              - us-east-2
+              - us-west-2
+            - Ref: EndpointRegion
+        AssertDescription: >-
+          The predefined Amazon Bedrock FIPS PrivateLink services in this
+          template are supported in us-east-1, us-east-2, and us-west-2 among
+          the listed US commercial Regions.
+
+Conditions:
+  IsInterface: !Equals [!Ref EndpointType, Interface]
+  IsGateway: !Equals [!Ref EndpointType, Gateway]
+  CreateNewSecurityGroup: !And
+    - !Condition IsInterface
+    - !Or
+      - !Equals [!Ref SecurityGroupMode, CreateNew]
+      - !Equals [!Ref SecurityGroupMode, CreateNewAndExisting]
+  AttachExistingSecurityGroup: !And
+    - !Condition IsInterface
+    - !Or
+      - !Equals [!Ref SecurityGroupMode, UseExisting]
+      - !Equals [!Ref SecurityGroupMode, CreateNewAndExisting]
+  EnablePrivateDns: !Equals [!Ref PrivateDnsEnabled, 'true']
+  IsCustomInterface: !Equals [!Ref EndpointService, CustomInterface]
+  IsS3Fips: !Equals [!Ref EndpointService, S3FIPS]
+  IsGenericInterface: !And
+    - !Condition IsInterface
+    - !Not [!Condition IsS3Fips]
+  HasIPv6Cidr: !Not [!Equals [!Ref AllowedIPv6Cidr, '']]
+  CreateNewSecurityGroupIPv6Ingress: !And
+    - !Condition CreateNewSecurityGroup
+    - !Condition HasIPv6Cidr
+
+Resources:
+  EndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateNewSecurityGroup
+    Properties:
+      GroupDescription: !Sub 'HTTPS access to ${EndpointName} VPC endpoint'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - Description: HTTPS from approved IPv4 CIDR
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref AllowedIPv4Cidr
+      Tags:
+        - Key: Name
+          Value: !Sub '${EndpointName}-sg'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: !Ref ManagedBy
+
+  EndpointSecurityGroupIPv6Ingress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: CreateNewSecurityGroupIPv6Ingress
+    Properties:
+      GroupId: !Ref EndpointSecurityGroup
+      Description: HTTPS from approved IPv6 CIDR
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIpv6: !Ref AllowedIPv6Cidr
+
+  InterfaceEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: IsGenericInterface
+    Properties:
+      VpcEndpointType: Interface
+      VpcId: !Ref VpcId
+      ServiceName: !If
+        - IsCustomInterface
+        - !Ref CustomServiceName
+        - !Sub
+          - 'com.amazonaws.${EndpointRegion}.${ServiceSuffix}'
+          - ServiceSuffix: !FindInMap [ServiceMap, !Ref EndpointService, Suffix]
+      SubnetIds: !Ref SubnetIds
+      SecurityGroupIds:
+        - !If [CreateNewSecurityGroup, !Ref EndpointSecurityGroup, !Ref 'AWS::NoValue']
+        - !If [AttachExistingSecurityGroup, !Ref ExistingSecurityGroupId, !Ref 'AWS::NoValue']
+      PrivateDnsEnabled: !If [EnablePrivateDns, true, false]
+      IpAddressType: !Ref IpAddressType
+      DnsOptions:
+        DnsRecordIpType: !Ref DnsRecordIpType
+      Tags:
+        - Key: Name
+          Value: !Ref EndpointName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: !Ref ManagedBy
+        - Key: EndpointCompliance
+          Value: !If [IsCustomInterface, Custom, FIPS]
+        - Key: EndpointService
+          Value: !Ref EndpointService
+
+  S3FipsInterfaceEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: IsS3Fips
+    Properties:
+      VpcEndpointType: Interface
+      VpcId: !Ref VpcId
+      ServiceName: !Sub 'com.amazonaws.${EndpointRegion}.s3-fips'
+      SubnetIds: !Ref SubnetIds
+      SecurityGroupIds:
+        - !If [CreateNewSecurityGroup, !Ref EndpointSecurityGroup, !Ref 'AWS::NoValue']
+        - !If [AttachExistingSecurityGroup, !Ref ExistingSecurityGroupId, !Ref 'AWS::NoValue']
+      PrivateDnsEnabled: !If [EnablePrivateDns, true, false]
+      IpAddressType: !Ref IpAddressType
+      DnsOptions:
+        DnsRecordIpType: !Ref DnsRecordIpType
+        PrivateDnsOnlyForInboundResolverEndpoint: AllResolvers
+      Tags:
+        - Key: Name
+          Value: !Ref EndpointName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: !Ref ManagedBy
+        - Key: EndpointCompliance
+          Value: FIPS140-3
+        - Key: EndpointService
+          Value: S3FIPS
+
+  GatewayEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: IsGateway
+    Properties:
+      VpcEndpointType: Gateway
+      VpcId: !Ref VpcId
+      ServiceName: !Sub
+        - 'com.amazonaws.${EndpointRegion}.${ServiceSuffix}'
+        - ServiceSuffix: !FindInMap [ServiceMap, !Ref EndpointService, Suffix]
+      RouteTableIds: !Split [',', !Ref GatewayRouteTableIds]
+      Tags:
+        - Key: Name
+          Value: !Ref EndpointName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: !Ref ManagedBy
+        - Key: EndpointCompliance
+          Value: Standard
+        - Key: EndpointService
+          Value: !Ref EndpointService
+
+Outputs:
+  VpcEndpointId:
+    Description: ID of the created VPC endpoint.
+    Value: !If
+      - IsGateway
+      - !Ref GatewayEndpoint
+      - !If
+        - IsS3Fips
+        - !Ref S3FipsInterfaceEndpoint
+        - !Ref InterfaceEndpoint
+
+  VpcEndpointType:
+    Description: Type of VPC endpoint created.
+    Value: !Ref EndpointType
+
+  VpcEndpointService:
+    Description: Friendly service selection used for the endpoint.
+    Value: !Ref EndpointService
+
+  VpcEndpointServiceName:
+    Description: Resolved AWS endpoint service name.
+    Value: !If
+      - IsCustomInterface
+      - !Ref CustomServiceName
+      - !Sub
+        - 'com.amazonaws.${EndpointRegion}.${ServiceSuffix}'
+        - ServiceSuffix: !FindInMap [ServiceMap, !Ref EndpointService, Suffix]
+
+  CreatedSecurityGroupId:
+    Condition: CreateNewSecurityGroup
+    Description: ID of the security group created by this stack.
+    Value: !Ref EndpointSecurityGroup
+
+  ExistingSecurityGroupId:
+    Condition: AttachExistingSecurityGroup
+    Description: Existing security group associated with the Interface endpoint.
+    Value: !Ref ExistingSecurityGroupId
+
+  EndpointRegion:
+    Description: Region of the created VPC endpoint.
+    Value: !Ref EndpointRegion

@@ -1,12 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: "AWS Service Catalog Serverless launch constraint role."
+Description: "AWS Service Catalog 1BU launch constraint role."
 
 Resources:
-  SCServerlessLaunchConstraintRole:
+  SCBULaunchConstraintRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: SCServerlessLaunchConstraintRole
+      RoleName: SC1BULaunchConstraintRole
       Description: >
         Launch role assumed by AWS Service Catalog to provision
         CloudFormation-based Service Catalog products.
@@ -61,7 +61,7 @@ Resources:
                 
 Outputs:
     LaunchRoleArn:
-        Value: !GetAtt SCServerlessLaunchConstraintRole.Arn
+        Value: !GetAtt SCBULaunchConstraintRole.Arn
     LaunchRoleName:
-        Value: !Ref SCServerlessLaunchConstraintRole
+        Value: !Ref SCBULaunchConstraintRole
         

@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Deploys the Service Catalog launch roles as nested stacks so each service
+  domain role is managed independently.
+
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+  com.aws.cloudformation.Context:
+    arch: Parent stack provisions eight independently managed IAM role stacks.
+    must:
+      - Deploy with CAPABILITY_NAMED_IAM.
+      - RepoRootURL must contain the referenced IAM template objects.
+
+Parameters:
+  RepoRootURL:
+    Type: String
+    Default: https://s3.amazonaws.com/aws-service-catalog-reference-architectures-314628052097/
+    AllowedPattern: '^https://s3\.amazonaws\.com/aws-service-catalog-reference-architectures-314628052097/$'
+    ConstraintDescription: Must be the AWS Service Catalog reference architectures S3 root URL ending in a slash.
+
+Resources:
+  OneBULaunchRole:
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Provisions the dedicated 1BU Service Catalog launch role.
+        must:
+          - Keep the child template URL aligned with the IAM object key.
+    Properties:
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-1bu-launchrole.yaml'
+
+  CommonTasksLaunchRole:
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Provisions the Common Tasks Service Catalog launch role.
+        must:
+          - Keep the child template URL aligned with the IAM object key.
+    Properties:
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-common-tasks-launchrole.yaml'
+
+  EC2LaunchRole:
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Provisions the EC2 Service Catalog launch role.
+        must:
+          - Keep the child template URL aligned with the IAM object key.
+    Properties:
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-ec2-launchrole.yaml'
+
+  ELBLaunchRole:
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Provisions the ELB Service Catalog launch role.
+        must:
+          - Keep the child template URL aligned with the IAM object key.
+    Properties:
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-elb-launchrole.yaml'
+
+  S3LaunchRole:
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Provisions the S3 Service Catalog launch role.
+        must:
+          - Keep the child template URL aligned with the IAM object key.
+    Properties:
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-s3-launchrole.yaml'
+
+  ServerlessLaunchRole:
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Provisions the Serverless Service Catalog launch role.
+        must:
+          - Keep the child template URL aligned with the IAM object key.
+    Properties:
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-serverless-launchrole.yaml'
+
+  VPCLaunchRole:
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Provisions the VPC Service Catalog launch role.
+        must:
+          - Keep the child template URL aligned with the IAM object key.
+    Properties:
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-vpc-launchrole.yaml'
+
+  VPCEndpointsLaunchRole:
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Provisions the VPC Endpoints Service Catalog launch role.
+        must:
+          - Keep the child template URL aligned with the IAM object key.
+    Properties:
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-vpcendpoints-launchrole.yaml'
+
+Outputs:
+  OneBULaunchRoleName:
+    Description: IAM role name for the 1BU Service Catalog launch constraint.
+    Value: !GetAtt OneBULaunchRole.Outputs.LaunchRoleName
+  OneBULaunchRoleArn:
+    Description: IAM role ARN for the 1BU Service Catalog launch constraint.
+    Value: !GetAtt OneBULaunchRole.Outputs.LaunchRoleArn
+  CommonTasksLaunchRoleName:
+    Description: IAM role name for the Common Tasks Service Catalog launch constraint.
+    Value: !GetAtt CommonTasksLaunchRole.Outputs.LaunchRoleName
+  CommonTasksLaunchRoleArn:
+    Description: IAM role ARN for the Common Tasks Service Catalog launch constraint.
+    Value: !GetAtt CommonTasksLaunchRole.Outputs.LaunchRoleArn
+  EC2LaunchRoleName:
+    Description: IAM role name for the EC2 Service Catalog launch constraint.
+    Value: !GetAtt EC2LaunchRole.Outputs.LaunchRoleName
+  EC2LaunchRoleArn:
+    Description: IAM role ARN for the EC2 Service Catalog launch constraint.
+    Value: !GetAtt EC2LaunchRole.Outputs.LaunchRoleArn
+  ELBLaunchRoleName:
+    Description: IAM role name for the ELB Service Catalog launch constraint.
+    Value: !GetAtt ELBLaunchRole.Outputs.LaunchRoleName
+  ELBLaunchRoleArn:
+    Description: IAM role ARN for the ELB Service Catalog launch constraint.
+    Value: !GetAtt ELBLaunchRole.Outputs.LaunchRoleArn
+  S3LaunchRoleName:
+    Description: IAM role name for the S3 Service Catalog launch constraint.
+    Value: !GetAtt S3LaunchRole.Outputs.LaunchRoleName
+  S3LaunchRoleArn:
+    Description: IAM role ARN for the S3 Service Catalog launch constraint.
+    Value: !GetAtt S3LaunchRole.Outputs.LaunchRoleArn
+  ServerlessLaunchRoleName:
+    Description: IAM role name for the Serverless Service Catalog launch constraint.
+    Value: !GetAtt ServerlessLaunchRole.Outputs.LaunchRoleName
+  ServerlessLaunchRoleArn:
+    Description: IAM role ARN for the Serverless Service Catalog launch constraint.
+    Value: !GetAtt ServerlessLaunchRole.Outputs.LaunchRoleArn
+  VPCLaunchRoleName:
+    Description: IAM role name for the VPC Service Catalog launch constraint.
+    Value: !GetAtt VPCLaunchRole.Outputs.LaunchRoleName
+  VPCLaunchRoleArn:
+    Description: IAM role ARN for the VPC Service Catalog launch constraint.
+    Value: !GetAtt VPCLaunchRole.Outputs.LaunchRoleArn
+  VPCEndpointsLaunchRoleName:
+    Description: IAM role name for the VPC Endpoints Service Catalog launch constraint.
+    Value: !GetAtt VPCEndpointsLaunchRole.Outputs.LaunchRoleName
+  VPCEndpointsLaunchRoleArn:
+    Description: IAM role ARN for the VPC Endpoints Service Catalog launch constraint.
+    Value: !GetAtt VPCEndpointsLaunchRole.Outputs.LaunchRoleArn

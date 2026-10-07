@@ -33,7 +33,7 @@ Resources:
       ProvisioningArtifactParameters:
         - Description: VPC IPv6 Dualstack 4 Private Subnets
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-vpc-ipv6-dualstack-4private.yaml'
+            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-template-vpc-ipv6-dualstack-4private.yaml'
           Name: VPC IPv6 Dualstack 4 Private Subnets v1.0.0
   AssociateVPCIPv6Dualstack4PrivateSubnetsProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation

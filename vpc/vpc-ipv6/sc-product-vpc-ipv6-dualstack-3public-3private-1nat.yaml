@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: VPC IPv6 Dualstack 3 Public 3 Private Subnets 2 NAT ServiceCatalog product.
+Description: VPC IPv6 Dualstack 3 Public 3 Private Subnets 1 NAT ServiceCatalog product. (fdp-1p4dlgcoi)
 
 Parameters:
   PortfolioProvider:
@@ -20,36 +20,36 @@ Parameters:
     Description: Root url for the repo containing the product templates.
 
 Resources:
-  VPCIPv6Dualstack3Public3Private2NATProduct:
+  VPCIPv6Dualstack3Public3Private1NATProduct:
     Type: AWS::ServiceCatalog::CloudFormationProduct
     Properties:
-      Name: VPC IPv6 Dualstack 3 Public 3 Private Subnets 2 NAT
-      Description: This CloudFormation template creates a securely configured Amazon VPC with IPv6 dualstack, 3 public subnets, 3 private subnets, and 2 NAT gateways.
+      Name: VPC IPv6 Dualstack 3 Public 3 Private Subnets 1 NAT
+      Description: This CloudFormation template creates a securely configured Amazon VPC with IPv6 dualstack, 3 public subnets, 3 private subnets, and 1 NAT gateway.
       Owner: !Ref PortfolioProvider
       Distributor: !Ref PortfolioProvider
       SupportDescription: ITS Cloud Support
       SupportEmail: ITSCloudSupport@mathematica-mpr.com
       ProductType: CLOUD_FORMATION_TEMPLATE
       ProvisioningArtifactParameters:
-        - Description: VPC IPv6 Dualstack 3 Public 3 Private Subnets 2 NAT
+        - Description: VPC IPv6 Dualstack 3 Public 3 Private Subnets 1 NAT
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-vpc-ipv6-dualstack-3public-3private-2nat.yaml'
-          Name: VPC IPv6 Dualstack 3 Public 3 Private Subnets 2 NAT v1.0.0
-  AssociateVPCIPv6Dualstack3Public3Private2NATProduct:
+            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-template-vpc-ipv6-dualstack-3public-3private-1nat.yaml'
+          Name: VPC IPv6 Dualstack 3 Public 3 Private Subnets 1 NAT v1.0.0
+  AssociateVPCIPv6Dualstack3Public3Private1NATProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref VPCIPv6Dualstack3Public3Private2NATProduct
+      ProductId: !Ref VPCIPv6Dualstack3Public3Private1NATProduct
 
-  constraintVPCIPv6Dualstack3Public3Private2NAT:
+  constraintVPCIPv6Dualstack3Public3Private1NAT:
     Type: AWS::ServiceCatalog::LaunchRoleConstraint
-    DependsOn: AssociateVPCIPv6Dualstack3Public3Private2NATProduct
+    DependsOn: AssociateVPCIPv6Dualstack3Public3Private1NATProduct
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref VPCIPv6Dualstack3Public3Private2NATProduct
+      ProductId: !Ref VPCIPv6Dualstack3Public3Private1NATProduct
       LocalRoleName: !Ref LaunchConstraintRole
       Description: !Ref LaunchConstraintRole
 
 Outputs:
   ProductId:
-    Value: !Ref VPCIPv6Dualstack3Public3Private2NATProduct
+    Value: !Ref VPCIPv6Dualstack3Public3Private1NATProduct

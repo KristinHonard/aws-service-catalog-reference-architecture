@@ -33,7 +33,7 @@ Resources:
       ProvisioningArtifactParameters:
         - Description: VPC IPv6 Dualstack 2 Public 2 Private Subnets 2 NAT
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-vpc-ipv6-dualstack-2public-2private-2nat.yaml'
+            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-template-vpc-ipv6-dualstack-2public-2private-2nat.yaml'
           Name: VPC IPv6 Dualstack 2 Public 2 Private Subnets 2 NAT v1.0.0
   AssociateVPCIPv6Dualstack2Public2Private2NATProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation

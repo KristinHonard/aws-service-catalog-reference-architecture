@@ -116,7 +116,11 @@ Resources:
     Properties:
       TemplateURL: !Sub '${RepoRootURL}iam/sc-template-iam-ec2-launchrole.yaml'
       TimeoutInMinutes: 5
- 
+
+#####################################################################
+### VPC for 2 - 4 PRIVATE DUALSTACK SUBNETS
+#####################################################################
+
   vpcIPV6dualstack2privatesubnetsproduct:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -164,7 +168,11 @@ Resources:
         RepoRootURL: !Ref RepoRootURL
       TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-4private.yaml'
       TimeoutInMinutes: 5
- 
+
+########################################################################
+### VPC for 2 PUBLIC/PRIVATE DUALSTACK SUBNETS WITH 1 - 2 NAT GATEWAYS
+########################################################################
+
   vpcIPV6dualstack2public2private1natproduct:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -197,6 +205,10 @@ Resources:
       TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-2public-2private-2nat.yaml'
       TimeoutInMinutes: 5
 
+########################################################################
+### VPC for 3 PUBLIC/PRIVATE DUALSTACK SUBNETS WITH 1 - 3 NAT GATEWAYS
+########################################################################
+
   vpcIPV6dualstack3public3private1natproduct:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -210,7 +222,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3public-3-private-1nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3public-3private-1nat.yaml'
       TimeoutInMinutes: 5
 
   vpcIPV6dualstack3public3private2natproduct:
@@ -226,7 +238,7 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3public-3-private-2nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3public-3private-2nat.yaml'
       TimeoutInMinutes: 5
 
   vpcIPV6dualstack3public3private3natproduct:
@@ -242,8 +254,12 @@ Resources:
           - !Ref LaunchRoleName
         PortfolioId: !Ref SCVPCIPV6portfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3public-3-private-3-nat.yaml'
+      TemplateURL: !Sub '${RepoRootURL}vpc/vpc-ipv6/sc-product-vpc-ipv6-dualstack-3public-3private-3nat.yaml'
       TimeoutInMinutes: 5
+
+########################################################################
+### VPC for 4 PUBLIC/PRIVATE DUALSTACK SUBNETS WITH 2 NAT GATEWAYS
+########################################################################
 
   vpcIPV6dualstack4public4private2natproduct:
     Type: AWS::CloudFormation::Stack

@@ -15,9 +15,7 @@ Metadata:
 Parameters:
   RepoRootURL:
     Type: String
-    Default: https://s3.amazonaws.com/aws-service-catalog-reference-architectures-314628052097/
-    AllowedPattern: '^https://s3\.amazonaws\.com/aws-service-catalog-reference-architectures-314628052097/$'
-    ConstraintDescription: Must be the AWS Service Catalog reference architectures S3 root URL ending in a slash.
+    Default: https://s3.amazonaws.com/aws-service-catalog-reference-architecture-314628052097/
 
 Resources:
   OneBULaunchRole:

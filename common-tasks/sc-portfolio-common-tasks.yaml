@@ -41,6 +41,7 @@ Parameters:
   LaunchRoleName:
     Type: String
     Description: "(Optional) Name of the launch constraint role for Common Tasks products. Leave this blank to create the role."
+    Default: "SCCommonTasksLaunchConstraintRole"
 
   LinkedRole1:
     Type: String

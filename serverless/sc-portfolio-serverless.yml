@@ -40,7 +40,8 @@ Parameters:
 
   LaunchRoleName:
     Type: String
-    Description: Name of the launch constraint role for Serverless products. Leave this blank to create the role.
+    Description: "(Optional) Name of the launch constraint role for Serverless products. Leave this blank to create the role."
+    Default: "SCServerlessLaunchConstraintRole"
 
   LinkedRole1:
     Type: String

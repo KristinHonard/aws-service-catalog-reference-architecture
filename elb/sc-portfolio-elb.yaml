@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: 1BU Demo Portfolio for Service Catalog. (fdp-1p4da46nc)
+Description: ELB Portfolio for Service Catalog. (fdp-1p4da46nc)
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -31,16 +31,17 @@ Parameters:
   PortfolioName:
     Type: String
     Description: Portfolio Name
-    Default: "MCSS Service Catalog 1BU Reference Architecture"
+    Default: "MCSS Service Catalog ELB Reference Architecture"
 
   PortfolioDescription:
     Type: String
     Description: Portfolio Description
-    Default: "MCSS Service Catalog Portfolio that contains reference architecture products for 1BU demo."
+    Default: "MCSS Service Catalog Portfolio that contains reference architecture products for ELB."
 
   LaunchRoleName:
     Type: String
-    Description: "(Optional) Name of the launch constraint role for 1BU products. Leave this blank to create the role."
+    Description: "(Optional) Name of the launch constraint role for ELB products. Leave this blank to create the role."
+    Default: "SCELBLaunchConstraintRole"
 
   LinkedRole1:
     Type: String
@@ -52,12 +53,7 @@ Parameters:
     
   LinkedRole3:
     Type: String
-    Description: (Optional) The name of a third role which can execute products in this portfolio.
-
-  # RepoRootURL:
-  #   Type: String
-  #   Description: Root URL for the repo containing the product templates.
-  #   Default: "https://service-catalog-reference-architecture-314628052097.s3.us-east-1.amazonaws.com/"
+    Description: "(Optional) The name of a third role which can execute products in this portfolio."
 
   RepoRootURL:
     Type: String
@@ -83,7 +79,7 @@ Conditions:
       - ''
 
 Resources:
-  SC1BUportfolio:
+  SCELBportfolio:
     Type: AWS::ServiceCatalog::Portfolio
     Properties:
       ProviderName: !Ref PortfolioProvider
@@ -95,7 +91,7 @@ Resources:
     Condition: CondLinkRole1
     Properties:
       PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole1}'
-      PortfolioId: !Ref SC1BUportfolio
+      PortfolioId: !Ref SCELBportfolio
       PrincipalType: IAM
 
   addrole2:
@@ -103,7 +99,7 @@ Resources:
     Condition: CondLinkRole2
     Properties:
       PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole2}'
-      PortfolioId: !Ref SC1BUportfolio
+      PortfolioId: !Ref SCELBportfolio
       PrincipalType: IAM
 
   addrole3:
@@ -111,7 +107,7 @@ Resources:
     Condition: CondLinkRole3
     Properties:
       PrincipalARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${LinkedRole3}'
-      PortfolioId: !Ref SC1BUportfolio
+      PortfolioId: !Ref SCELBportfolio
       PrincipalType: IAM 
 
   LaunchConstraintRole:
@@ -120,25 +116,25 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: CreateLaunchConstraint
     Properties:
-      TemplateURL: !Sub '${RepoRootURL}iam/sc-1bu-templates-launchrole.yaml'
+      TemplateURL: !Sub '${RepoRootURL}iam/sc-elb-templates-launchrole.yaml'
       TimeoutInMinutes: 5
 
-  1butemplateproduct1:
+  elbtemplateproduct1:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
         PortfolioProvider: !Ref PortfolioProvider
-        LaunchConstraintRole: !If 
+        LaunchConstraintRole: !If
           - CreateLaunchConstraint
-          - !GetAtt 
+          - !GetAtt
             - LaunchConstraintRole
             - Outputs.LaunchRoleName
           - !Ref LaunchRoleName
-        PortfolioId: !Ref SC1BUportfolio
+        PortfolioId: !Ref SCELBportfolio
         RepoRootURL: !Ref RepoRootURL
-      TemplateURL: !Sub '${RepoRootURL}1bu-templates/sc-product-serverless-monitoring.yaml'
+      TemplateURL: !Sub '${RepoRootURL}elb/sc-product-alb-encrypted-port-fwd.yaml'
       TimeoutInMinutes: 5
 
 Outputs:
@@ -154,7 +150,7 @@ Outputs:
       - LaunchConstraintRole
       - Outputs.LaunchRoleName
 
-  1buProductId:
+  elbProductId:
     Value: !GetAtt 
-      - 1butemplateproduct1
+      - elbtemplateproduct1
       - Outputs.ProductId

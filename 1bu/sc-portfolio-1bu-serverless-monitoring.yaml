@@ -41,6 +41,7 @@ Parameters:
   LaunchRoleName:
     Type: String
     Description: "(Optional) Name of the launch constraint role for 1BU products. Leave this blank to create the role."
+    Default: "SC1BULaunchConstraintRole"
 
   LinkedRole1:
     Type: String

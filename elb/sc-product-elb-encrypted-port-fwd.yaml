@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Monitoring and alerting system for serverless API applications that use API Gateway and Lambda.
+Description: ELB product for encrypted port forwarding.
 
 Parameters:
   PortfolioProvider:
@@ -9,7 +9,7 @@ Parameters:
 
   LaunchConstraintRole:
     Type: String
-    Description: Launch constraint role for Serverless Monitoring products.
+    Description: Launch constraint role for ELB products.
 
   PortfolioId:
     Type: String
@@ -20,37 +20,37 @@ Parameters:
     Description: Root url for the repo containing the product templates.
 
 Resources:
-  ServerlessMonitoringProduct:
+  ELBEncryptedPortFwdProduct:
     Type: AWS::ServiceCatalog::CloudFormationProduct
     Properties:
-      Name: Serverless Monitoring
-      Description: This product builds a SNS Topic for sending alarm notifications via email API Gateway CloudWatch Alarms4XX error alarm, client errors5XX error alarm, and server errors Lambda CloudWatch Alarm Monitors function execution errors.
+      Name: ELB Encrypted Port Forwarding
+      Description: This product sets up an ELB with encrypted port forwarding.
       Owner: !Ref PortfolioProvider
       Distributor: !Ref PortfolioProvider
       SupportDescription: ITS Cloud Support
       SupportEmail: ITSCloudSupport@mathematica-mpr.com
       ProductType: CLOUD_FORMATION_TEMPLATE
       ProvisioningArtifactParameters:
-        - Description: Serverless Monitoring solution 
+        - Description: ELB Encrypted Port Forwarding solution
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}serverless/sc-serverless-monitoring.yaml'
-          Name: Serverless Monitoring v1.0
+            LoadTemplateFromURL: !Sub '${RepoRootURL}elb/sc-elb-encrypted-port-fwd.yaml'
+          Name: ELB Encrypted Port Forwarding v1.0
 
-  AssociateServerlessMonitoringProduct:
+  AssociateELBEncryptedPortFwdProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref ServerlessMonitoringProduct
+      ProductId: !Ref ELBEncryptedPortFwdProduct
 
-  constraintServerlessMonitoring:
+  constraintELBEncryptedPortFwd:
     Type: AWS::ServiceCatalog::LaunchRoleConstraint
-    DependsOn: AssociateServerlessMonitoringProduct
+    DependsOn: AssociateELBEncryptedPortFwdProduct
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref ServerlessMonitoringProduct
+      ProductId: !Ref ELBEncryptedPortFwdProduct
       LocalRoleName: !Ref LaunchConstraintRole
       Description: !Ref LaunchConstraintRole
 
 Outputs:
   ProductId:
-    Value: !Ref ServerlessMonitoringProduct
+    Value: !Ref ELBEncryptedPortFwdProduct

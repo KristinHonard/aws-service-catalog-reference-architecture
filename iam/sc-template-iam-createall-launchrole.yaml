@@ -15,7 +15,7 @@ Metadata:
 Parameters:
   RepoRootURL:
     Type: String
-    Default: https://s3.amazonaws.com/aws-service-catalog-reference-architecture-314628052097/
+    Default: https://s3.amazonaws.com/service-catalog-reference-architecture-314628052097/
 
 Resources:
   OneBULaunchRole:

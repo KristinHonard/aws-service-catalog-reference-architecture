@@ -41,7 +41,8 @@ Parameters:
  
   LaunchRoleName:
     Type: String
-    Description: "Name of the launch constraint role for VPC endpoint products. Leave this blank to create the role."
+    Description: "(Optional) Name of the launch constraint role for VPC endpoint products. Leave this blank to create the role."
+    Default: "SCVPCEndpointsLaunchConstraintRole"
  
   LinkedRole1:
     Type: String

@@ -20,7 +20,7 @@ Parameters:
     Description: Root url for the repo containing the product templates.
 
 Resources:
-  VPCIPv6Dualstack2PrivateSubnetsProduct:
+  VPCIPv6Dualstack3Public3Private1NATProduct:
     Type: AWS::ServiceCatalog::CloudFormationProduct
     Properties:
       Name: VPC IPv6 Dualstack 3 Public 3 Private Subnets 1 NAT
@@ -33,7 +33,7 @@ Resources:
       ProvisioningArtifactParameters:
         - Description: VPC IPv6 Dualstack 3 Public 3 Private Subnets 1 NAT
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-vpc-ipv6-dualstack-3public-3private-1nat.yaml'
+            LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/vpc_ipv6/sc-vpc-ipv6-dualstack-3public-3-private-1nat.yaml'
           Name: VPC IPv6 Dualstack 3 Public 3 Private Subnets 1 NAT v1.0.0
   AssociateVPCIPv6Dualstack3Public3Private1NATProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation

@@ -33,15 +33,16 @@ This repository contains governed AWS Service Catalog portfolio templates and pr
 
 ## **Portfolio and Product Index**
 
-| Portfolio area | Portfolio template | TagOption template | Product count |
-|---|---|---|---|
-| EC2 | `ec2/sc-portfolio-ec2-ec2Instances.yaml` | `ec2/sc-ec2-tagoptionLibrary.yaml` | 4 |
-| 1BU | `1bu/sc-portfolio-1bu-serverless-monitoring.yaml` | `1bu/sc-1bu-tagoptionLibrary.yaml` | 1 |
-| Common tasks | `common-tasks/sc-portfolio-common-tasks.yaml` | `common-tasks/sc-common-tasks-tagoptionLibrary.yaml` | 1 |
-| S3 | `s3/sc-portfolio-s3.yaml` | `s3/sc-s3-tagoptionLibrary.yaml` | 5 |
-| Serverless | `serverless/sc-portfolio-serverless.yml` | `serverless/sc-serverless-tagoptionLibrary.yaml` | 1 |
-| VPC IPv4 | `vpc/vpc-ipv4/sc-portfolio-vpc-ipv4.yaml` | `vpc/vpc-ipv4/sc-vpc-ipv4-tagoptionLibrary.yaml` | 4 |
-| VPC IPv6 dual stack | `vpc/vpc-ipv6/sc-portfolio-vpc-ipv6dualstack.yaml` | `vpc/vpc-ipv6/sc-vpc-ipv6-tagoptionLibrary.yaml` | 9 |
+| Portfolio area | Description | Portfolio template | TagOption template | Product count |
+| --- | --- | --- | --- | --- |
+| EC2 | Approved Linux and Windows EC2 instance configurations. | `ec2/sc-portfolio-ec2-ec2Instances.yaml` | `ec2/sc-ec2-tagoptionLibrary.yaml` | 4 |
+| 1BU | Serverless monitoring reference architecture for 1BU workloads. | `1bu/sc-portfolio-1bu-serverless-monitoring.yaml` | `1bu/sc-1bu-tagoptionLibrary.yaml` | 1 |
+| Common tasks | Shared common-task products, including GitHub Actions setup. | `common-tasks/sc-portfolio-common-tasks.yaml` | `common-tasks/sc-common-tasks-tagoptionLibrary.yaml` | 1 |
+| S3 | Governed S3 bucket configurations, including private, public, encryption, MFA, and lifecycle options. | `s3/sc-portfolio-s3.yaml` | `s3/sc-s3-tagoptionLibrary.yaml` | 5 |
+| Serverless | Approved Lambda-based serverless application resources. | `serverless/sc-portfolio-serverless.yml` | `serverless/sc-serverless-tagoptionLibrary.yaml` | 1 |
+| VPC IPv4 | VPC reference architectures using IPv4 addressing. | `vpc/vpc-ipv4/sc-portfolio-vpc-ipv4.yaml` | `vpc/vpc-ipv4/sc-vpc-ipv4-tagoptionLibrary.yaml` | 4 |
+| VPC IPv6 dual stack | VPC reference architectures supporting IPv4 and IPv6 dual-stack networking. | `vpc/vpc-ipv6/sc-portfolio-vpc-ipv6dualstack.yaml` | `vpc/vpc-ipv6/sc-vpc-ipv6-tagoptionLibrary.yaml` | 9 |
+| VPC endpoints | Create and configure VPC endpoints. | `vpc-endpoints/sc-portfolio-vpcendpoints-vpcEndpoint.yaml` | Not provided | 1 |
 
 > [!TIP]
 > Keep portfolio templates, product templates, and launch-role templates versioned together to avoid path drift and broken product associations.

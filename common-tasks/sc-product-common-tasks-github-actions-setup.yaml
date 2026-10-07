@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Monitoring and alerting system for serverless API applications that use API Gateway and Lambda.
+Description: Sets up common tasks for GitHub Actions workflows, including necessary IAM roles and policies.
 
 Parameters:
   PortfolioProvider:
@@ -9,7 +9,7 @@ Parameters:
 
   LaunchConstraintRole:
     Type: String
-    Description: Launch constraint role for Serverless Monitoring products.
+    Description: Launch constraint role for Common Tasks - GitHub Actions Setup product.
 
   PortfolioId:
     Type: String
@@ -20,37 +20,37 @@ Parameters:
     Description: Root url for the repo containing the product templates.
 
 Resources:
-  ServerlessMonitoringProduct:
+  CommonTasksProduct:
     Type: AWS::ServiceCatalog::CloudFormationProduct
     Properties:
-      Name: Serverless Monitoring
-      Description: This product builds a SNS Topic for sending alarm notifications via email API Gateway CloudWatch Alarms4XX error alarm, client errors5XX error alarm, and server errors Lambda CloudWatch Alarm Monitors function execution errors.
+      Name: Common Tasks - GitHub Actions Setup
+      Description: This product sets up common tasks for GitHub Actions workflows, including necessary IAM roles and policies.
       Owner: !Ref PortfolioProvider
       Distributor: !Ref PortfolioProvider
       SupportDescription: ITS Cloud Support
       SupportEmail: ITSCloudSupport@mathematica-mpr.com
       ProductType: CLOUD_FORMATION_TEMPLATE
       ProvisioningArtifactParameters:
-        - Description: Serverless Monitoring solution 
+        - Description: Common Tasks - GitHub Actions Setup v1.0
           Info:
             LoadTemplateFromURL: !Sub '${RepoRootURL}common-tasks/sc-template-common-tasks-github-actions-setup.yaml'
-          Name: Serverless Monitoring v1.0
+          Name: Common Tasks - GitHub Actions Setup v1.0
 
-  AssociateServerlessMonitoringProduct:
+  AssociateCommonTasksProduct:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref ServerlessMonitoringProduct
+      ProductId: !Ref CommonTasksProduct
 
-  constraintServerlessMonitoring:
+  constraintCommonTasks:
     Type: AWS::ServiceCatalog::LaunchRoleConstraint
-    DependsOn: AssociateServerlessMonitoringProduct
+    DependsOn: AssociateCommonTasksProduct
     Properties:
       PortfolioId: !Ref PortfolioId
-      ProductId: !Ref ServerlessMonitoringProduct
+      ProductId: !Ref CommonTasksProduct
       LocalRoleName: !Ref LaunchConstraintRole
       Description: !Ref LaunchConstraintRole
 
 Outputs:
   ProductId:
-    Value: !Ref ServerlessMonitoringProduct
+    Value: !Ref CommonTasksProduct

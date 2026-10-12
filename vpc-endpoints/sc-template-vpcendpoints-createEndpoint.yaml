@@ -537,27 +537,27 @@ Resources:
         - Key: EndpointService
           Value: S3FIPS
 
-  GatewayEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Condition: IsGateway
-    Properties:
-      VpcEndpointType: Gateway
-      VpcId: !Ref VpcId
-      ServiceName: !Sub
-        - 'com.amazonaws.${EndpointRegion}.${ServiceSuffix}'
-        - ServiceSuffix: !FindInMap [ServiceMap, !Ref EndpointService, Suffix]
-      RouteTableIds: !Split [',', !Ref GatewayRouteTableIds]
-      Tags:
-        - Key: Name
-          Value: !Ref EndpointName
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: ManagedBy
-          Value: !Ref ManagedBy
-        - Key: EndpointCompliance
-          Value: Standard
-        - Key: EndpointService
-          Value: !Ref EndpointService
+  # GatewayEndpoint:
+  #   Type: AWS::EC2::VPCEndpoint
+  #   Condition: IsGateway
+  #   Properties:
+  #     VpcEndpointType: Gateway
+  #     VpcId: !Ref VpcId
+  #     ServiceName: !Sub
+  #       - 'com.amazonaws.${EndpointRegion}.${ServiceSuffix}'
+  #       - ServiceSuffix: !FindInMap [ServiceMap, !Ref EndpointService, Suffix]
+  #     RouteTableIds: !Split [',', !Ref GatewayRouteTableIds]
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref EndpointName
+  #       - Key: Environment
+  #         Value: !Ref Environment
+  #       - Key: ManagedBy
+  #         Value: !Ref ManagedBy
+  #       - Key: EndpointCompliance
+  #         Value: Standard
+  #       - Key: EndpointService
+  #         Value: !Ref EndpointService
 
 Outputs:
   VpcEndpointId:
